@@ -339,41 +339,48 @@ export const EngineDiagnostics = ({ data, onSyncTeamId }: EngineDiagnosticsProps
                   const rotationPool = weapons.filter(d => !d.isPrimaryXIWeapon && (d.xiRank && d.xiRank > 11));
 
                   return (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {/* Top 11 Primary XI Core Weapons */}
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[9px]">
+                        <div className="flex items-center justify-between text-[9.5px] pb-1 border-b border-amber-500/20">
                           <span className="flex items-center gap-1 font-black uppercase text-amber-400 tracking-wider">
                             <span>🔥</span>
-                            <span>Top 11 Primary XI Core Weapons ({primaryXI.length})</span>
+                            <span>Top 11 Primary XI Core ({primaryXI.length})</span>
                           </span>
-                          <span className="text-[8px] text-emerald-400 font-mono font-bold">Prioritized XI Starters</span>
+                          <span className="text-[8px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                            Core Starters
+                          </span>
                         </div>
-                        <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                        <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                           {primaryXI.map(p => (
                             <div 
                               key={p.id} 
-                              className="flex items-center justify-between px-2.5 py-1.5 bg-slate-950/90 hover:bg-slate-900 rounded-xl border border-amber-500/30 hover:border-amber-500/60 transition-all text-[10px]"
-                              title={p.xiJustification || `${p.web_name}: Primary XI Core #${p.xiRank}`}
+                              className="bg-slate-950/90 hover:bg-slate-900 rounded-xl border border-amber-500/25 hover:border-amber-500/50 p-2 transition-all space-y-1"
+                              title={p.xiJustification}
                             >
-                              <div className="flex items-center gap-2 min-w-0 pr-2">
-                                <span className="text-[8px] font-mono font-black text-amber-300 bg-amber-500/20 border border-amber-500/40 px-1 py-0.5 rounded shrink-0">
-                                  #{p.xiRank} XI Core
-                                </span>
-                                <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
-                                  {p.position}
-                                </span>
-                                <span className="text-slate-100 font-bold truncate">{p.web_name}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 font-mono text-[8.5px] shrink-0 whitespace-nowrap">
-                                <span className="text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded">
-                                  {Math.round(p.startRate * 100)}% Start
-                                </span>
-                                {p.captainRate > 0 && (
-                                  <span className="text-amber-300 font-bold bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.5 rounded">
-                                    {Math.round(p.captainRate * 100)}% Cap
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-[9px] font-mono font-black text-amber-400 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded shrink-0">
+                                    #{p.xiRank}
                                   </span>
-                                )}
+                                  <span className={`text-[8.5px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
+                                    {p.position}
+                                  </span>
+                                  <span className="text-[11.5px] font-black text-white truncate drop-shadow-sm" title={p.web_name}>
+                                    {p.web_name}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 font-mono text-[8.5px] shrink-0">
+                                  <span className="text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded">
+                                    {Math.round(p.startRate * 100)}% Start
+                                  </span>
+                                  {p.captainRate > 0 && (
+                                    <span className="text-amber-300 font-bold bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.5 rounded">
+                                      {Math.round(p.captainRate * 100)}% Cap
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -382,34 +389,39 @@ export const EngineDiagnostics = ({ data, onSyncTeamId }: EngineDiagnosticsProps
 
                       {/* Squad Rotation Weapons (Rank 12+) */}
                       {rotationPool.length > 0 && (
-                        <div className="space-y-1.5 pt-1 border-t border-slate-800/60">
-                          <div className="flex items-center justify-between text-[9px]">
+                        <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                          <div className="flex items-center justify-between text-[9.5px] pb-1 border-b border-slate-800">
                             <span className="flex items-center gap-1 font-black uppercase text-slate-400 tracking-wider">
                               <span>🔄</span>
-                              <span>Squad Rotation Weapons ({rotationPool.length})</span>
+                              <span>Squad Rotation Options ({rotationPool.length})</span>
                             </span>
-                            <span className="text-[8px] text-slate-400 font-mono">Ranked #12+ (Depth Options)</span>
+                            <span className="text-[8px] text-slate-400 font-mono">Rank #12+</span>
                           </div>
-                          <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                          <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                             {rotationPool.map(p => (
                               <div 
                                 key={p.id} 
-                                className="flex items-center justify-between px-2.5 py-1.5 bg-slate-950/60 hover:bg-slate-900 rounded-xl border border-slate-800/80 hover:border-slate-700 transition-all text-[10px]"
-                                title={p.xiJustification || `${p.web_name}: Squad Rotation Weapon #${p.xiRank}`}
+                                className="bg-slate-950/60 hover:bg-slate-900 rounded-xl border border-slate-800/80 hover:border-slate-700 p-2 transition-all space-y-1"
+                                title={p.xiJustification}
                               >
-                                <div className="flex items-center gap-2 min-w-0 pr-2">
-                                  <span className="text-[8px] font-mono font-bold text-slate-400 bg-slate-800/80 border border-slate-700 px-1 py-0.5 rounded shrink-0">
-                                    #{p.xiRank} Rotation
-                                  </span>
-                                  <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
-                                    {p.position}
-                                  </span>
-                                  <span className="text-slate-300 font-semibold truncate">{p.web_name}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 font-mono text-[8.5px] shrink-0 whitespace-nowrap">
-                                  <span className="text-slate-400 font-bold bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded">
-                                    {Math.round(p.startRate * 100)}% Start
-                                  </span>
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-[9px] font-mono font-bold text-slate-400 bg-slate-800/80 border border-slate-700 px-1.5 py-0.5 rounded shrink-0">
+                                      #{p.xiRank}
+                                    </span>
+                                    <span className={`text-[8.5px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
+                                      {p.position}
+                                    </span>
+                                    <span className="text-[11px] font-bold text-slate-200 truncate" title={p.web_name}>
+                                      {p.web_name}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-1 font-mono text-[8.5px] shrink-0">
+                                    <span className="text-slate-400 font-bold bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded">
+                                      {Math.round(p.startRate * 100)}% Start
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             ))}
