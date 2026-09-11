@@ -259,6 +259,21 @@ export class ManagerSnapshotService {
 
     consensusDetails.sort((a, b) => b.convictionScore - a.convictionScore || b.ownershipRate - a.ownershipRate);
 
+    // Algorithmic justification & demarcation for Starting Weapons (Primary 11 Core XI vs Rotation 12+)
+    const startingWeapons = consensusDetails.filter(d => d.isStartingWeapon);
+    startingWeapons.forEach((weapon, idx) => {
+      const xiRank = idx + 1;
+      weapon.xiRank = xiRank;
+      if (xiRank <= 11) {
+        weapon.isPrimaryXIWeapon = true;
+        const capReason = weapon.captainRate >= 0.15 ? ` & ${Math.round(weapon.captainRate * 100)}% elite captaincy` : '';
+        weapon.xiJustification = `Primary XI Core #${xiRank}: Prioritized in Top 11 Starting XI by conviction score (${Math.round(weapon.startRate * 100)}% elite start rate${capReason}, conviction score: ${weapon.convictionScore}). Chosen above rotation weapons due to superior starting frequency & minimal bench penalty.`;
+      } else {
+        weapon.isPrimaryXIWeapon = false;
+        weapon.xiJustification = `Squad Rotation Weapon #${xiRank}: Qualified as a Starting Weapon, but ranked #${xiRank} in conviction score. Placed in squad rotation behind the Top 11 Core XI due to higher bench rotation risk or positional squad competition.`;
+      }
+    });
+
     const eliteConsensusPicks = consensusDetails
       .filter(d => d.isStartingWeapon || d.ownershipRate >= 0.4)
       .slice(0, 10)

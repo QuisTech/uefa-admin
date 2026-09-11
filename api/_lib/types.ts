@@ -178,6 +178,9 @@ export interface EliteConsensusDetail {
   isStartingWeapon: boolean;
   isBenchEnabler: boolean;
   qualifiesForHardLock: boolean;
+  isPrimaryXIWeapon?: boolean;
+  xiRank?: number;
+  xiJustification?: string;
 }
 
 export interface TopManagerInsight {

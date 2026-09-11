@@ -330,49 +330,92 @@ export const EngineDiagnostics = ({ data, onSyncTeamId }: EngineDiagnosticsProps
                   </span>
                 </div>
 
-                {/* Starting Weapons */}
+                {/* Starting Weapons: Split into Top 11 Primary XI vs Rotation Candidates */}
                 {(() => {
                   const weapons = data.topManagerInsight.consensusDetails.filter(d => d.isStartingWeapon);
                   if (weapons.length === 0) return null;
+
+                  const primaryXI = weapons.filter(d => d.isPrimaryXIWeapon || (d.xiRank && d.xiRank <= 11));
+                  const rotationPool = weapons.filter(d => !d.isPrimaryXIWeapon && (d.xiRank && d.xiRank > 11));
+
                   return (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[9px]">
-                        <span className="flex items-center gap-1 font-black uppercase text-amber-400 tracking-wider">
-                          <span>🔥</span>
-                          <span>Starting Weapons ({weapons.length})</span>
-                        </span>
-                        <span className="text-[8px] text-slate-500 font-mono">Ranked by Conviction</span>
-                      </div>
-                      <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
-                        {weapons.map(p => (
-                          <div 
-                            key={p.id} 
-                            className="flex items-center justify-between px-2.5 py-1.5 bg-slate-950/80 hover:bg-slate-900 rounded-xl border border-slate-800/80 hover:border-amber-500/30 transition-all text-[10px]"
-                            title={`${p.web_name}: ${p.startCount}/${p.eligibleManagers} starts (${Math.round(p.startRate * 100)}%), ${p.captainCount}/${p.eligibleManagers} captains (${Math.round(p.captainRate * 100)}%), Conviction: ${p.convictionScore}`}
-                          >
-                            <div className="flex items-center gap-2 min-w-0 pr-2">
-                              <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
-                                {p.position}
-                              </span>
-                              <span className="text-slate-200 font-bold truncate">{p.web_name}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 font-mono text-[8.5px] shrink-0 whitespace-nowrap">
-                              <span className={`font-bold px-1.5 py-0.5 rounded border ${
-                                p.startRate >= 1.0 
-                                  ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25' 
-                                  : 'text-slate-300 bg-slate-800/80 border-slate-700/60'
-                              }`}>
-                                {Math.round(p.startRate * 100)}% Start
-                              </span>
-                              {p.captainRate > 0 && (
-                                <span className="text-amber-300 font-bold bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.5 rounded">
-                                  {Math.round(p.captainRate * 100)}% Cap
+                    <div className="space-y-2">
+                      {/* Top 11 Primary XI Core Weapons */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[9px]">
+                          <span className="flex items-center gap-1 font-black uppercase text-amber-400 tracking-wider">
+                            <span>🔥</span>
+                            <span>Top 11 Primary XI Core Weapons ({primaryXI.length})</span>
+                          </span>
+                          <span className="text-[8px] text-emerald-400 font-mono font-bold">Prioritized XI Starters</span>
+                        </div>
+                        <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                          {primaryXI.map(p => (
+                            <div 
+                              key={p.id} 
+                              className="flex items-center justify-between px-2.5 py-1.5 bg-slate-950/90 hover:bg-slate-900 rounded-xl border border-amber-500/30 hover:border-amber-500/60 transition-all text-[10px]"
+                              title={p.xiJustification || `${p.web_name}: Primary XI Core #${p.xiRank}`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0 pr-2">
+                                <span className="text-[8px] font-mono font-black text-amber-300 bg-amber-500/20 border border-amber-500/40 px-1 py-0.5 rounded shrink-0">
+                                  #{p.xiRank} XI Core
                                 </span>
-                              )}
+                                <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
+                                  {p.position}
+                                </span>
+                                <span className="text-slate-100 font-bold truncate">{p.web_name}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 font-mono text-[8.5px] shrink-0 whitespace-nowrap">
+                                <span className="text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded">
+                                  {Math.round(p.startRate * 100)}% Start
+                                </span>
+                                {p.captainRate > 0 && (
+                                  <span className="text-amber-300 font-bold bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.5 rounded">
+                                    {Math.round(p.captainRate * 100)}% Cap
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
+
+                      {/* Squad Rotation Weapons (Rank 12+) */}
+                      {rotationPool.length > 0 && (
+                        <div className="space-y-1.5 pt-1 border-t border-slate-800/60">
+                          <div className="flex items-center justify-between text-[9px]">
+                            <span className="flex items-center gap-1 font-black uppercase text-slate-400 tracking-wider">
+                              <span>🔄</span>
+                              <span>Squad Rotation Weapons ({rotationPool.length})</span>
+                            </span>
+                            <span className="text-[8px] text-slate-400 font-mono">Ranked #12+ (Depth Options)</span>
+                          </div>
+                          <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                            {rotationPool.map(p => (
+                              <div 
+                                key={p.id} 
+                                className="flex items-center justify-between px-2.5 py-1.5 bg-slate-950/60 hover:bg-slate-900 rounded-xl border border-slate-800/80 hover:border-slate-700 transition-all text-[10px]"
+                                title={p.xiJustification || `${p.web_name}: Squad Rotation Weapon #${p.xiRank}`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0 pr-2">
+                                  <span className="text-[8px] font-mono font-bold text-slate-400 bg-slate-800/80 border border-slate-700 px-1 py-0.5 rounded shrink-0">
+                                    #{p.xiRank} Rotation
+                                  </span>
+                                  <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
+                                    {p.position}
+                                  </span>
+                                  <span className="text-slate-300 font-semibold truncate">{p.web_name}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 font-mono text-[8.5px] shrink-0 whitespace-nowrap">
+                                  <span className="text-slate-400 font-bold bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded">
+                                    {Math.round(p.startRate * 100)}% Start
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
