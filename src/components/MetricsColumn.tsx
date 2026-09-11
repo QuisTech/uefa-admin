@@ -65,8 +65,8 @@ export const MetricsColumn: React.FC<MetricsColumnProps> = ({ data, riskMode, sc
             <Star className="w-5 h-5 text-slate-950 font-black" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 uppercase font-black">{data?.captain?.team_name || "Real Madrid"}</p>
-            <p className="text-sm font-black text-white">{data?.captain?.web_name || "K. Mbappé"}</p>
+            <p className="text-[10px] text-slate-400 uppercase font-black">{data?.captain?.team_name || data?.startingXI[0]?.team_name || "Top Club"}</p>
+            <p className="text-sm font-black text-white">{data?.captain?.web_name || data?.startingXI[0]?.web_name || "Top Pick"}</p>
             <p className="text-[10px] text-cyan-400 font-bold">Captain Pick (2x Multiplier)</p>
           </div>
         </div>

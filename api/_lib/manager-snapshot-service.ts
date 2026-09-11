@@ -253,36 +253,48 @@ export class ManagerSnapshotService {
       .slice(0, 10)
       .map(d => d.web_name);
 
+    const sampleLeaders = decisions.length > 0 ? decisions.map((d, i) => ({
+      rank: d.overall_rank || i + 1,
+      entry: d.manager_id,
+      manager_name: d.manager_name,
+      team_name: d.team_name,
+      total_points: d.total_points,
+      normalized_total_points: d.normalized_total_points || d.total_points,
+      chip_deduction: d.chip_deduction || 0,
+      chips_used: d.chips_used
+    })) : [
+      { rank: 1, entry: 101001, manager_name: "UCL Master Quants", team_name: "Bernabéu Quants", total_points: 312, normalized_total_points: 312, chip_deduction: 0, chips_used: [] },
+      { rank: 4, entry: 101004, manager_name: "UEFA Tactics Pro", team_name: "All-Star UCL XI", total_points: 308, normalized_total_points: 308, chip_deduction: 0, chips_used: [] },
+      { rank: 12, entry: 101012, manager_name: "Marco Silva", team_name: "Champions Analytics", total_points: 324, normalized_total_points: 300, chip_deduction: 24, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
+      { rank: 18, entry: 101018, manager_name: "Julian Weber", team_name: "Bavaria Dominance", total_points: 321, normalized_total_points: 297, chip_deduction: 24, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
+      { rank: 42, entry: 101042, manager_name: "Antoine Laurent", team_name: "Parisiens Elite", total_points: 294, normalized_total_points: 294, chip_deduction: 0, chips_used: [] },
+      { rank: 55, entry: 101055, manager_name: "Matteo Rossi", team_name: "San Siro Shield", total_points: 315, normalized_total_points: 291, chip_deduction: 24, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
+      { rank: 88, entry: 101088, manager_name: "Carlos Mendez", team_name: "Galáctico Force", total_points: 290, normalized_total_points: 290, chip_deduction: 0, chips_used: [] },
+      { rank: 104, entry: 101104, manager_name: "Lukas Podolski", team_name: "Rheinland UCL", total_points: 309, normalized_total_points: 285, chip_deduction: 24, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
+      { rank: 142, entry: 101142, manager_name: "Sven Hedlund", team_name: "Nordic Champions", total_points: 302, normalized_total_points: 284, chip_deduction: 18, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
+      { rank: 210, entry: 101210, manager_name: "David Sterling", team_name: "London UCL Edge", total_points: 282, normalized_total_points: 282, chip_deduction: 0, chips_used: [] }
+    ];
+
+    const pureZeroCount = sampleLeaders.filter(m => (!m.chips_used || m.chips_used.length === 0) && !m.chip_deduction).length;
+    const normalizedCount = sampleLeaders.filter(m => m.chip_deduction && m.chip_deduction > 0).length;
+    const totalCount = sampleLeaders.length;
+
+    const derivedFallbackPicks = players
+      .filter(p => (p.selPer || 0) >= 8.0)
+      .sort((a, b) => (b.selPer || 0) - (a.selPer || 0))
+      .slice(0, 8)
+      .map(p => p.pDName || p.pFName || `Player ${p.id}`);
+
     return {
-      noChipLeaderCount: 42,
-      eligibleManagers: 42,
-      pureZeroChipCount: 2,
-      normalizedChipCount: 40,
-      sampleLeaders: decisions.length > 0 ? decisions.map((d, i) => ({
-        rank: i + 1,
-        entry: d.manager_id,
-        manager_name: d.manager_name,
-        team_name: d.team_name,
-        total_points: d.total_points,
-        normalized_total_points: d.normalized_total_points || d.total_points,
-        chip_deduction: d.chip_deduction || 0,
-        chips_used: d.chips_used
-      })) : [
-        { rank: 2, entry: 895045, manager_name: "Jasper Leveillee", team_name: "Sync Squad", total_points: 306, normalized_total_points: 282, chip_deduction: 24, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
-        { rank: 12, entry: 5757280, manager_name: "Ioannis Vasili", team_name: "Sync Squad", total_points: 298, normalized_total_points: 274, chip_deduction: 24, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
-        { rank: 587, entry: 4148445, manager_name: "Abhishek Raj", team_name: "Sync Squad", total_points: 273, normalized_total_points: 273, chip_deduction: 0, chips_used: [] },
-        { rank: 14, entry: 6017029, manager_name: "Rebeen ranya", team_name: "Sync Squad", total_points: 297, normalized_total_points: 270, chip_deduction: 27, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
-        { rank: 141, entry: 5169560, manager_name: "Almin Mujčinović", team_name: "Sync Squad", total_points: 282, normalized_total_points: 270, chip_deduction: 12, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
-        { rank: 956, entry: 5662742, manager_name: "Tony Elliott", team_name: "Sync Squad", total_points: 270, normalized_total_points: 270, chip_deduction: 0, chips_used: [] },
-        { rank: 28, entry: 4742522, manager_name: "Tyrell Bailey", team_name: "Sync Squad", total_points: 293, normalized_total_points: 269, chip_deduction: 24, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
-        { rank: 168, entry: 2071781, manager_name: "Rahoz Bakhtiar", team_name: "Sync Squad", total_points: 281, normalized_total_points: 269, chip_deduction: 12, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
-        { rank: 86, entry: 8526682, manager_name: "Jose Giron", team_name: "Sync Squad", total_points: 284, normalized_total_points: 267, chip_deduction: 17, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] },
-        { rank: 41, entry: 1062962, manager_name: "Joseph Caulfield", team_name: "Sync Squad", total_points: 289, normalized_total_points: 265, chip_deduction: 24, chips_used: [{ name: '3xc', time: '2026-09-01', event: 1 }] }
-      ],
+      noChipLeaderCount: totalCount,
+      eligibleManagers: totalCount,
+      pureZeroChipCount: pureZeroCount,
+      normalizedChipCount: normalizedCount,
+      sampleLeaders,
       marketDisagreementRating: 0.28,
-      eliteConsensusPicks: eliteConsensusPicks.length > 0 ? eliteConsensusPicks : [
-        "K. Mbappé", "E. Haaland", "H. Kane", "L. Yamal", "J. Bellingham", "Vini Jr.", "M. Salah", "C. Palmer"
-      ],
+      eliteConsensusPicks: eliteConsensusPicks.length > 0 ? eliteConsensusPicks : (
+        derivedFallbackPicks.length > 0 ? derivedFallbackPicks : consensusDetails.slice(0, 8).map(d => d.web_name)
+      ),
       consensusDetails
     };
   }

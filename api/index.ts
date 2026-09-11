@@ -356,6 +356,37 @@ export class UEFAService {
 
   public static async syncTeam(teamId: string, riskMode: string) {
     const recs = await this.getRecommendations(riskMode);
+    const numericId = parseInt(teamId) || 101001;
+    const matchday = recs.nextEventId || 1;
+
+    // Archive synced squad decision into ManagerSnapshotService
+    const syncedSnap = {
+      season: '2026',
+      matchday,
+      manager_id: numericId,
+      manager_name: `UEFA Manager #${numericId}`,
+      team_name: `UCL Squad #${numericId}`,
+      overall_rank: Math.max(1, Math.round(numericId / 1000)),
+      total_points: Math.round(recs.expectedPoints),
+      normalized_total_points: Math.round(recs.expectedPoints),
+      chip_deduction: 0,
+      chips_used: [],
+      squad_15: recs.squad.map(p => p.id),
+      starting_xi: recs.startingXI.map(p => p.id),
+      captain_id: recs.captain?.id || null,
+      vice_captain_id: recs.viceCaptain?.id || null,
+      transfers_in: [],
+      transfers_out: [],
+      bank: 0.5,
+      team_value: recs.totalCost,
+      timestamp: Date.now()
+    };
+
+    const archive = ManagerSnapshotService.loadSnapshot(matchday);
+    const existing = archive?.decisions || [];
+    const updated = [syncedSnap, ...existing.filter(d => d.manager_id !== numericId)];
+    ManagerSnapshotService.saveSnapshot('2026', matchday, updated);
+
     return {
       squad: recs.squad,
       transfers: [],
@@ -365,8 +396,8 @@ export class UEFAService {
       ],
       bank: 0.5,
       totalCost: recs.totalCost,
-      managerInfo: { id: parseInt(teamId) || 1, teamName: "UEFA Champions XI", managerName: "Quant Strategist" },
-      matchday: recs.nextEventId
+      managerInfo: { id: numericId, teamName: `UCL Squad #${numericId}`, managerName: `UEFA Manager #${numericId}` },
+      matchday
     };
   }
 
