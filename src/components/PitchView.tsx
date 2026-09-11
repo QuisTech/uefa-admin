@@ -267,7 +267,7 @@ export const PitchView: React.FC<PitchViewProps> = ({
       {viewMode === 'pitch' ? (
         /* 🌟 Authentic Football 3D Pitch Container */
         <div className="relative mx-auto w-full max-w-3xl py-1">
-          <div className="relative rounded-3xl shadow-2xl border-2 border-slate-800 bg-[#009b4d] p-2 sm:p-4 overflow-hidden">
+          <div className="relative rounded-3xl shadow-2xl border-2 border-slate-800 bg-[#1ed0b0] p-2 sm:p-4 overflow-hidden">
             
             {/* 🌿 Mown Grass Turf & Perspective Diagram Underlay */}
             <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -277,10 +277,10 @@ export const PitchView: React.FC<PitchViewProps> = ({
                 style={{
                   background: `repeating-linear-gradient(
                     to bottom,
-                    #00a350,
-                    #00a350 40px,
-                    #009b4d 40px,
-                    #009b4d 80px
+                    #1ed0b0,
+                    #1ed0b0 40px,
+                    #17b89b 40px,
+                    #17b89b 80px
                   )`
                 }}
               />
