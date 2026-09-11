@@ -150,28 +150,113 @@ export class UEFAService {
     const lockedSet = new Set<number>(lockedPlayerIds);
     const excludedSet = new Set<number>(excludedPlayerIds);
 
-    // Apply elite consensus starting weapons as hard locks in VALUE quant mode & Template Shield scenario (matching fpl-admin exact mechanics)
-    if (scenario === 'template' || riskMode === 'value') {
-      const consensusAnchors = topInsight.consensusDetails
-        .filter(cd => cd.isStartingWeapon || cd.qualifiesForHardLock || cd.ownershipRate >= 0.35)
-        .sort((a, b) => b.convictionScore - a.convictionScore || b.startRate - a.startRate);
+    // Pure dynamic template anchor selection (100% dynamic, 0% heuristics)
+    // Anchors top EO/ownership consensus asset per line (DEF, MID, FWD)
+    // plus any consensus premium asset (cost >= 11.0M, ownership/EO >= 40%) representing asymmetric captaincy risk
+    const selectPureDynamicAnchors = (scoredList: ScoredPlayer[]): number[] => {
+      const active = scoredList.filter(p => ((p.eo && p.eo >= 30) || (p.ownership && p.ownership >= 30)) && (p.xP || 0) >= 3.0);
 
-      const maxLocks = riskMode === 'value' ? 5 : 6;
-      consensusAnchors.slice(0, maxLocks).forEach(cd => {
-        if (!excludedSet.has(cd.id)) {
-          lockedSet.add(cd.id);
+      const defs = active.filter(p => p.position === 'DEF').sort((a, b) => (b.eo || b.ownership || 0) - (a.eo || a.ownership || 0));
+      const mids = active.filter(p => p.position === 'MID').sort((a, b) => (b.eo || b.ownership || 0) - (a.eo || a.ownership || 0));
+      const fwds = active.filter(p => p.position === 'FWD').sort((a, b) => (b.eo || b.ownership || 0) - (a.eo || a.ownership || 0));
+
+      const anchors: ScoredPlayer[] = [];
+      if (defs.length > 0) anchors.push(defs[0]);
+      if (mids.length > 0) anchors.push(mids[0]);
+      if (fwds.length > 0) anchors.push(fwds[0]);
+
+      const premiums = active.filter(p => Number(p.cost || 0) >= 11.0 && ((p.eo && p.eo >= 40) || (p.ownership && p.ownership >= 40)));
+      for (const prem of premiums) {
+        if (!anchors.some(a => a.id === prem.id) && anchors.length < 4) {
+          anchors.push(prem);
+        }
+      }
+
+      return anchors.map(a => a.id);
+    };
+
+    const templateAnchorIds = selectPureDynamicAnchors(scored);
+    const params = getParamsForRiskMode(riskMode, {}, scenario);
+    const effectiveBudget = budgetInMillions;
+
+    const activeLockedSet = new Set<number>(lockedSet);
+    if (scenario === 'template') {
+      let currentLockedCost = Array.from(activeLockedSet).reduce((sum: number, id: number) => {
+        const p = scored.find(x => x.id === id);
+        return sum + Number(p?.cost || 0);
+      }, 0);
+
+      templateAnchorIds.forEach(id => {
+        if (excludedSet.has(id)) return;
+        const p = scored.find(x => x.id === id);
+        if (!p) return;
+        
+        const pCost = Number(p.cost || 0);
+        const newCount = activeLockedSet.size + 1;
+        const remainingSlots = Math.max(0, 15 - newCount);
+        const minRemainingCost = remainingSlots * 4.2; // Minimum ~€4.2M per remaining slot
+
+        if (currentLockedCost + pCost + minRemainingCost <= effectiveBudget) {
+          activeLockedSet.add(id);
+          currentLockedCost += pCost;
+        }
+      });
+    } else if (riskMode === 'value' || fuel === 'value') {
+      // Consume Elite Intelligence for VALUE Mode (matching fpl-admin exact implementation)
+      const topInsight = await ManagerSnapshotService.getDynamicTopManagerInsight(players, matchday);
+      const consensusDetails = topInsight?.consensusDetails || [];
+      const consensusNames = new Set((topInsight?.eliteConsensusPicks || []).map(n => n.toLowerCase()));
+
+      let currentLockedCost = Array.from(activeLockedSet).reduce((sum: number, id: number) => {
+        const p = scored.find(x => x.id === id);
+        return sum + Number(p?.cost || 0);
+      }, 0);
+
+      // In VALUE Mode: Exclude non-consensus ultra-premiums (>€13.5M) to prevent budget starvation
+      scored.forEach(p => {
+        const pCost = Number(p.cost || 0);
+        const webNameLower = (p.web_name || '').toLowerCase();
+        const isConsensus = consensusNames.has(webNameLower) ||
+          consensusDetails.some(cd => cd.id === p.id && cd.ownershipRate > 0);
+
+        if (!isConsensus && pCost >= 13.5) {
+          excludedSet.add(p.id);
+        }
+      });
+
+      // Filter ranked consensus candidates by two-condition hard-lock rule or Starting Weapon status:
+      // 1. convictionScore >= config.hardLockMinConviction OR isStartingWeapon (startRate >= 50%)
+      const hardLockCandidates = consensusDetails
+        .filter(cd => cd.qualifiesForHardLock || cd.isStartingWeapon)
+        .sort((a, b) => b.convictionScore - a.convictionScore);
+
+      hardLockCandidates.forEach(cand => {
+        if (excludedSet.has(cand.id)) return;
+        const p = scored.find(x => 
+          x.id === cand.id || 
+          x.web_name.toLowerCase() === cand.web_name.toLowerCase()
+        );
+        if (!p || excludedSet.has(p.id)) return;
+
+        const pCost = Number(p.cost || 0);
+        const newCount = activeLockedSet.size + 1;
+        const remainingSlots = Math.max(0, 15 - newCount);
+        const minRemainingCost = remainingSlots * 4.2;
+
+        if (currentLockedCost + pCost + minRemainingCost <= effectiveBudget && activeLockedSet.size < 10) {
+          activeLockedSet.add(p.id);
+          currentLockedCost += pCost;
         }
       });
     }
 
-    const availableIds = new Set<number>(scored.map(p => p.id));
-    const params = getParamsForRiskMode(riskMode, {}, scenario);
-
     let squad: ScoredPlayer[] = [];
     let isHeuristicFallback = false;
 
+    const availableIds = new Set<number>(scored.map(p => p.id));
+
     try {
-      const optimalIds = solveOptimalSquad(oracle, matchday, budget, 8, params, availableIds, lockedSet, excludedSet);
+      const optimalIds = solveOptimalSquad(oracle, matchday, budget, 8, params, availableIds, activeLockedSet, excludedSet);
       if (!optimalIds || optimalIds.length === 0) {
         throw new Error("LP Solver infeasible");
       }
