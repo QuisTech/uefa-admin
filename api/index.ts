@@ -8,6 +8,7 @@ import { UEFAOracle } from './_lib/ingestion.js';
 import { getParamsForRiskMode } from './_lib/projection.js';
 import { solveOptimalSquad, solveStartingXI, solveCaptain } from './_lib/lp-solver.js';
 import { ManagerSnapshotService } from './_lib/manager-snapshot-service.js';
+import { BeamSearchTransferOptimizer } from './_lib/beam-search.js';
 
 export class UEFAService {
   private static cache: { data: any; timestamp: number } | null = null;
@@ -300,8 +301,22 @@ export class UEFAService {
       // ignore omission calculation error
     }
 
+    // 8-Matchday Beam Search Multi-GW Transfer Path Finding (Beam Width K = 5, Horizon H = 8 GWs)
+    let beamPathResult = undefined;
+    try {
+      const beamOptimizer = new BeamSearchTransferOptimizer(oracle, players, 5);
+      beamPathResult = beamOptimizer.searchOptimalTransferPath(
+        squad.map(p => p.id),
+        matchday,
+        8,
+        params
+      );
+    } catch (err: any) {
+      console.warn("[UEFAService] Beam Search evaluation fallback:", err.message);
+    }
+
     const swapAnalysis = riskMode !== 'safe' ? {
-      swapCount: 2,
+      swapCount: beamPathResult?.optimalPath?.transfersHistory?.filter(t => t.transfersIn.length > 0).length || 2,
       differentialQuality: 'PASS' as const,
       withinThresholdCount: 2,
       withinThresholdPct: 92,
