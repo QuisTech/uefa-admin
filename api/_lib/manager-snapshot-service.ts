@@ -174,14 +174,24 @@ export class ManagerSnapshotService {
       });
     } else {
       // Derive baseline Top 1k herd consensus directly from official UEFA selection percentages (selPer)
-      // Rank players by actual selPer in descending order without fuzzy regex matching
       players.forEach(p => {
         const pid = Number(p.id);
-        const selPct = p.selPer || 0; // Official percentage (e.g. 45.5 = 45.5%)
-        
-        // High selection players in official UEFA Fantasy have proportional starting rates in top cohorts
-        const estimatedStartRate = Math.min(1.0, Math.round((selPct / 40.0) * 100) / 100);
-        const estimatedSquadRate = Math.min(1.0, Math.round((selPct / 35.0) * 100) / 100);
+        const selPct = p.selPer || 0;
+        const cost = p.value || 5.0;
+        const isBudgetEnablerCost = cost <= 5.5;
+        let estimatedSquadRate = 0;
+        let estimatedStartRate = 0;
+
+        if (isBudgetEnablerCost) {
+          // Budget assets have high squad ownership but lower starting rates (benched for flexibility)
+          estimatedSquadRate = Math.min(1.0, Math.round((selPct / 18.0) * 100) / 100);
+          estimatedStartRate = Math.min(0.40, Math.round((selPct / 45.0) * 100) / 100);
+        } else {
+          // Premium/Mid assets have high starting rates relative to squad ownership
+          estimatedStartRate = Math.min(1.0, Math.round((selPct / 35.0) * 100) / 100);
+          estimatedSquadRate = Math.min(1.0, Math.round((selPct / 30.0) * 100) / 100);
+        }
+
         const estimatedCapRate = (p.skill === 4 || p.skill === 3) && selPct >= 20.0 ? Math.min(0.50, Math.round((selPct / 75.0) * 100) / 100) : 0;
 
         tallies.set(pid, {
@@ -209,14 +219,15 @@ export class ManagerSnapshotService {
       const rawConviction = (startRate * config.startWeight) + (captainRate * config.captainWeight) - (benchRate * config.benchPenalty);
       const convictionScore = Math.round(rawConviction * 1000) / 1000;
       const convictionIndex = Math.round(convictionScore * 100);
+      const cost = p.value || 5.0;
 
-      // Require real selection ownership (> 8%) for Starting Weapon status
-      const isStartingWeapon = startRate >= 0.50 && (p.selPer || 0) >= 8.0;
-      const isBenchEnabler = benchRate >= 0.15 && startRate < 0.50 && (p.value || 5.0) <= 5.5;
+      // Starting Weapons: High starting rate (>= 45%), ownership >= 8%, cost > 5.5M
+      // Bench Enablers: Budget cost (<= 5.5M), high bench rate or benched preference among top cohort
+      const isStartingWeapon = startRate >= 0.45 && (p.selPer || 0) >= 8.0 && cost > 5.5;
+      const isBenchEnabler = cost <= 5.5 && (benchRate >= 0.10 || (ownershipRate >= 0.12 && startRate < 0.45));
       const qualifiesForHardLock = convictionScore >= config.hardLockMinConviction && startRate >= config.startingWeaponMinStartRate;
 
       const position = p.skill ? posMap[p.skill] || 'MID' : 'MID';
-      const cost = p.value || 5.0;
 
       consensusDetails.push({
         id: pid,
