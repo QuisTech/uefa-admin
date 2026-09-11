@@ -475,12 +475,12 @@ export const PitchView: React.FC<PitchViewProps> = ({
               </button>
             </div>
 
-            {/* 🏟️ Starting XI 4 Tactical Rows */}
+            {/* 🏟️ Starting XI 4 Tactical Rows (Matching Official UEFA Fantasy DOM: FWD -> MID -> DEF -> GK) */}
             <div className="relative z-10 flex flex-col justify-between min-h-[420px] sm:min-h-[480px] pt-5 pb-2">
               
-              {/* Row 1: Goalkeeper (Inside Goalmouth Box) */}
-              <div className="flex justify-center items-center w-full my-1">
-                {gkps.map(p => (
+              {/* Row 1: Forwards (Top of Pitch - si-row-three) */}
+              <div className="flex justify-around items-center w-full max-w-[82%] mx-auto my-1">
+                {fwds.map(p => (
                   <PitchPlayerNode
                     key={p.id}
                     player={p}
@@ -490,19 +490,7 @@ export const PitchView: React.FC<PitchViewProps> = ({
                 ))}
               </div>
 
-              {/* Row 2: Defenders */}
-              <div className="flex justify-around items-center w-full max-w-[90%] mx-auto my-1">
-                {defs.map(p => (
-                  <PitchPlayerNode
-                    key={p.id}
-                    player={p}
-                    showFixtures={showFixtures}
-                    onClick={() => onSelectPlayer(p)}
-                  />
-                ))}
-              </div>
-
-              {/* Row 3: Midfielders */}
+              {/* Row 2: Midfielders (si-row-five) */}
               <div className="flex justify-around items-center w-full max-w-[98%] mx-auto my-1">
                 {mids.map(p => (
                   <PitchPlayerNode
@@ -514,9 +502,21 @@ export const PitchView: React.FC<PitchViewProps> = ({
                 ))}
               </div>
 
-              {/* Row 4: Forwards */}
-              <div className="flex justify-around items-center w-full max-w-[82%] mx-auto my-1">
-                {fwds.map(p => (
+              {/* Row 3: Defenders (si-row-five) */}
+              <div className="flex justify-around items-center w-full max-w-[90%] mx-auto my-1">
+                {defs.map(p => (
+                  <PitchPlayerNode
+                    key={p.id}
+                    player={p}
+                    showFixtures={showFixtures}
+                    onClick={() => onSelectPlayer(p)}
+                  />
+                ))}
+              </div>
+
+              {/* Row 4: Goalkeeper (Bottom of Pitch - si-row-two) */}
+              <div className="flex justify-center items-center w-full my-1">
+                {gkps.map(p => (
                   <PitchPlayerNode
                     key={p.id}
                     player={p}
