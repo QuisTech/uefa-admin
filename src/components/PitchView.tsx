@@ -44,6 +44,105 @@ const getPosBadgeColor = (pos?: string) => {
   }
 };
 
+export interface TeamKit {
+  primary: string;
+  secondary: string;
+  sleeve: string;
+  pattern?: 'stripes' | 'sleeves' | 'chest' | 'solid';
+  textColor: string;
+}
+
+export const getTeamKit = (teamCode: string = '', isGkp: boolean = false): TeamKit => {
+  if (isGkp) {
+    return {
+      primary: '#00e676', // Neon GKP Emerald Green
+      secondary: '#00a152',
+      sleeve: '#00e676',
+      pattern: 'solid',
+      textColor: '#020617'
+    };
+  }
+
+  const code = (teamCode || '').toUpperCase().trim();
+
+  switch (code) {
+    case 'RMA': // Real Madrid - All White with Gold
+      return { primary: '#ffffff', secondary: '#e2b13c', sleeve: '#ffffff', pattern: 'solid', textColor: '#0f172a' };
+    case 'MCI': // Man City - Sky Blue
+      return { primary: '#6cabdd', secondary: '#1c2d5a', sleeve: '#6cabdd', pattern: 'solid', textColor: '#ffffff' };
+    case 'BAY': // Bayern Munich - Red
+      return { primary: '#dc052d', secondary: '#ffffff', sleeve: '#dc052d', pattern: 'solid', textColor: '#ffffff' };
+    case 'BAR': // Barcelona - Blaugrana Stripes
+      return { primary: '#004d98', secondary: '#a50044', sleeve: '#004d98', pattern: 'stripes', textColor: '#ffffff' };
+    case 'ARS': // Arsenal - Red body, White sleeves
+      return { primary: '#ef0107', secondary: '#ffffff', sleeve: '#ffffff', pattern: 'sleeves', textColor: '#ffffff' };
+    case 'PSG': // Paris Saint-Germain - Navy with Red stripe
+      return { primary: '#002342', secondary: '#da291c', sleeve: '#002342', pattern: 'chest', textColor: '#ffffff' };
+    case 'INT': // Inter Milan - Nerazzurri Black & Blue
+      return { primary: '#000000', secondary: '#0053a0', sleeve: '#000000', pattern: 'stripes', textColor: '#ffffff' };
+    case 'LIV': // Liverpool - Crimson Red
+      return { primary: '#c8102e', secondary: '#f6eb61', sleeve: '#c8102e', pattern: 'solid', textColor: '#ffffff' };
+    case 'BVB': // Dortmund - Yellow & Black
+      return { primary: '#fde100', secondary: '#000000', sleeve: '#fde100', pattern: 'solid', textColor: '#000000' };
+    case 'LEV': // Bayer Leverkusen - Red body, Black sleeves
+      return { primary: '#e32219', secondary: '#000000', sleeve: '#000000', pattern: 'sleeves', textColor: '#ffffff' };
+    case 'ATM': // Atletico Madrid - Red & White Stripes
+      return { primary: '#cb3524', secondary: '#ffffff', sleeve: '#cb3524', pattern: 'stripes', textColor: '#ffffff' };
+    case 'PSV': // PSV Eindhoven - Red & White Stripes
+      return { primary: '#ee1c25', secondary: '#ffffff', sleeve: '#ee1c25', pattern: 'stripes', textColor: '#ffffff' };
+    case 'AVL': // Aston Villa - Claret body, Sky sleeves
+      return { primary: '#670e36', secondary: '#95bfe6', sleeve: '#95bfe6', pattern: 'sleeves', textColor: '#ffffff' };
+    case 'RBL': // RB Leipzig - White body, Red shoulders
+      return { primary: '#ffffff', secondary: '#dd0741', sleeve: '#dd0741', pattern: 'sleeves', textColor: '#0f172a' };
+    case 'JUV': // Juventus - Black & White Stripes
+      return { primary: '#000000', secondary: '#ffffff', sleeve: '#000000', pattern: 'stripes', textColor: '#ffffff' };
+    case 'MIL': // AC Milan - Red & Black Stripes
+      return { primary: '#fb090b', secondary: '#000000', sleeve: '#000000', pattern: 'stripes', textColor: '#ffffff' };
+    case 'ATA': // Atalanta - Blue & Black Stripes
+      return { primary: '#1e71b8', secondary: '#000000', sleeve: '#000000', pattern: 'stripes', textColor: '#ffffff' };
+    case 'BEN': // Benfica - Red
+      return { primary: '#e30613', secondary: '#ffffff', sleeve: '#e30613', pattern: 'solid', textColor: '#ffffff' };
+    case 'SCP': // Sporting CP - Green & White Stripes
+      return { primary: '#008057', secondary: '#ffffff', sleeve: '#008057', pattern: 'stripes', textColor: '#ffffff' };
+    case 'CEL': // Celtic - Green & White Hoops
+      return { primary: '#008542', secondary: '#ffffff', sleeve: '#008542', pattern: 'stripes', textColor: '#ffffff' };
+    default:
+      return { primary: '#00e5ff', secondary: '#002342', sleeve: '#00e5ff', pattern: 'solid', textColor: '#0f172a' };
+  }
+};
+
+const JerseySVG: React.FC<{ kit: TeamKit; size?: number }> = ({ kit, size = 42 }) => {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" className="drop-shadow-lg filter shrink-0">
+      {/* Short Sleeves Left & Right */}
+      <path d="M 15 25 L 30 18 L 35 38 L 22 45 Z" fill={kit.sleeve} stroke="#000000" strokeWidth="2" />
+      <path d="M 85 25 L 70 18 L 65 38 L 78 45 Z" fill={kit.sleeve} stroke="#000000" strokeWidth="2" />
+
+      {/* Main Jersey Body */}
+      <path d="M 30 18 L 70 18 L 75 82 C 75 85, 25 85, 25 82 Z" fill={kit.primary} stroke="#000000" strokeWidth="2.5" />
+
+      {/* Vertical Stripe Pattern */}
+      {kit.pattern === 'stripes' && (
+        <g stroke="#000000" strokeWidth="1.2">
+          <rect x="42" y="19" width="7" height="63" fill={kit.secondary} />
+          <rect x="55" y="19" width="7" height="63" fill={kit.secondary} />
+          <rect x="68" y="21" width="5" height="60" fill={kit.secondary} />
+          <rect x="29" y="21" width="5" height="60" fill={kit.secondary} />
+        </g>
+      )}
+
+      {/* Central Chest Stripe Pattern */}
+      {kit.pattern === 'chest' && (
+        <rect x="44" y="19" width="12" height="63" fill={kit.secondary} stroke="#000000" strokeWidth="1.2" />
+      )}
+
+      {/* Collar Accent */}
+      <path d="M 38 18 C 45 28, 55 28, 62 18 Z" fill="#000000" />
+      <path d="M 40 18 C 46 25, 54 25, 60 18 Z" fill="#ffffff" />
+    </svg>
+  );
+};
+
 export const PitchView: React.FC<PitchViewProps> = ({
   data,
   onSelectPlayer,
@@ -548,6 +647,8 @@ interface PitchPlayerNodeProps {
 
 const PitchPlayerNode: React.FC<PitchPlayerNodeProps> = ({ player, compact = false, showFixtures = false, onClick }) => {
   const nextFix = player.next_fixtures?.[0];
+  const isGkp = player.position === 'GKP';
+  const kit = getTeamKit(player.team_short_name || player.team_name, isGkp);
 
   return (
     <div
@@ -568,19 +669,14 @@ const PitchPlayerNode: React.FC<PitchPlayerNodeProps> = ({ player, compact = fal
         </span>
       )}
 
-      {/* Player Shirt Node Box */}
-      <div className={`rounded-xl flex flex-col items-center justify-center shadow-xl border transition-all ${
-        compact ? 'w-10 h-10' : 'w-12 h-12 sm:w-14 sm:h-14'
-      } ${
-        player.isCaptain
-          ? 'bg-gradient-to-b from-amber-500/20 via-slate-900 to-slate-950 border-amber-400'
-          : player.isStartingWeapon
-          ? 'bg-gradient-to-b from-cyan-500/20 via-slate-900 to-slate-950 border-cyan-400'
-          : 'bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border-slate-700 group-hover:border-cyan-400'
-      }`}>
-        <span className="text-[8px] sm:text-[9px] font-bold text-cyan-400 uppercase tracking-wider">{player.team_short_name}</span>
-        <span className="text-xs sm:text-base font-black text-white font-mono leading-none">{player.xP.toFixed(1)}</span>
-        <span className="text-[7.5px] text-slate-400 font-semibold">xP</span>
+      {/* Official Vector Jersey Kit Container */}
+      <div className={`relative flex items-center justify-center transition-all ${compact ? 'w-10 h-10' : 'w-12 h-12 sm:w-14 sm:h-14'}`}>
+        <JerseySVG kit={kit} size={compact ? 36 : 46} />
+        
+        {/* xP overlay badge on the jersey */}
+        <span className="absolute inset-0 flex items-center justify-center pt-1 text-[11px] sm:text-xs font-black font-mono drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.9)]" style={{ color: kit.textColor }}>
+          {player.xP.toFixed(1)}
+        </span>
       </div>
 
       {/* Nameplate Card */}

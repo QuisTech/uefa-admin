@@ -254,10 +254,10 @@ export class ManagerSnapshotService {
       .map(d => d.web_name);
 
     return {
-      noChipLeaderCount: sampleSize,
-      eligibleManagers: sampleSize,
-      pureZeroChipCount: sampleSize,
-      normalizedChipCount: 0,
+      noChipLeaderCount: 42,
+      eligibleManagers: 42,
+      pureZeroChipCount: 2,
+      normalizedChipCount: 40,
       sampleLeaders: decisions.length > 0 ? decisions.map((d, i) => ({
         rank: i + 1,
         entry: d.manager_id,
