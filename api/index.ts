@@ -149,14 +149,18 @@ export class UEFAService {
     const lockedSet = new Set<number>(lockedPlayerIds);
     const excludedSet = new Set<number>(excludedPlayerIds);
 
-    // Apply template anchors or hard locks for VALUE & Template scenarios
+    // Apply elite consensus starting weapons as hard locks in VALUE quant mode & Template Shield scenario (matching fpl-admin exact mechanics)
     if (scenario === 'template' || riskMode === 'value') {
-      topInsight.consensusDetails
-        .filter(cd => cd.qualifiesForHardLock || cd.isStartingWeapon)
-        .slice(0, 6)
-        .forEach(cd => {
-          if (!excludedSet.has(cd.id)) lockedSet.add(cd.id);
-        });
+      const consensusAnchors = topInsight.consensusDetails
+        .filter(cd => cd.isStartingWeapon || cd.qualifiesForHardLock || cd.ownershipRate >= 0.35)
+        .sort((a, b) => b.convictionScore - a.convictionScore || b.startRate - a.startRate);
+
+      const maxLocks = riskMode === 'value' ? 5 : 6;
+      consensusAnchors.slice(0, maxLocks).forEach(cd => {
+        if (!excludedSet.has(cd.id)) {
+          lockedSet.add(cd.id);
+        }
+      });
     }
 
     const availableIds = new Set<number>(scored.map(p => p.id));
