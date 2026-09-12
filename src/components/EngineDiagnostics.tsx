@@ -656,7 +656,7 @@ export const EngineDiagnostics = ({ data, onSyncTeamId }: EngineDiagnosticsProps
                 {/* Bench Enablers */}
                 {(() => {
                   const enablers = data.topManagerInsight.consensusDetails
-                    .filter(d => d.isBenchEnabler)
+                    .filter(d => d.isBenchEnabler && d.benchRate > 0)
                     .sort((a, b) => b.benchRate - a.benchRate || a.cost - b.cost || b.squadCount - a.squadCount);
                   if (enablers.length === 0) return null;
                   return (

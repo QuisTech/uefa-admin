@@ -260,9 +260,9 @@ export class ManagerSnapshotService {
       const cost = p.value || 5.0;
 
       // Starting Weapons: Starting rate >= 35%, in starting XI of multiple top managers, cost > 5.5M
-      // Bench Enablers: Budget cost (<= 5.5M), benched by top managers (benchCount >= 1 or benchRate >= 5%) OR ultra-budget enabler (cost <= 4.5M)
+      // Bench Enablers: Budget cost (<= 5.5M), ACTUALLY benched by top managers (benchRate >= 2% of cohort)
       const isStartingWeapon = startRate >= 0.35 && cost > 5.5;
-      const isBenchEnabler = !isStartingWeapon && cost <= 5.5 && (benchCount >= 1 || benchRate >= 0.05 || (cost <= 4.5 && ownershipRate >= 0.10));
+      const isBenchEnabler = !isStartingWeapon && cost <= 5.5 && benchRate >= 0.02 && benchCount > 0;
       const qualifiesForHardLock = convictionScore >= config.hardLockMinConviction && startRate >= config.startingWeaponMinStartRate;
 
       const position = p.skill ? posMap[p.skill] || 'MID' : 'MID';
