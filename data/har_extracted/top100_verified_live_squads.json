@@ -1,5 +1,36 @@
 [
   {
+    "rank": 0,
+    "entry": 532002,
+    "guid": "146242f4-adcf-11f1-820b-916aae5300aa",
+    "uefa_url": "https://gaming.uefa.com/en/uclfantasy/team/146242f4-adcf-11f1-820b-916aae5300aa/006d0069006300680071007500690073/0/0/0/Worldleaderboard?typeId=0031",
+    "manager_name": "michquis",
+    "team_name": "MichQuis",
+    "total_points": 0,
+    "normalized_total_points": 0,
+    "chip_deduction": 0,
+    "is_chip_normalized": false,
+    "chips_used": [],
+    "captainId": 250041741,
+    "squad": [
+      250016833,
+      250076574,
+      250220576,
+      250041741,
+      250112880,
+      250171184,
+      250176450,
+      250210649,
+      250131901,
+      250136465,
+      250188006,
+      250188223,
+      250088061,
+      250171278,
+      250085391
+    ]
+  },
+  {
     "rank": 1,
     "entry": 88255,
     "guid": "0aba30ba-aa35-11f1-831c-0f22566c6f8d",

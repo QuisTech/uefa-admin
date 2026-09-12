@@ -162,7 +162,9 @@ export class ManagerSnapshotService {
   }
 
   public static getEliteLeaderProfile(identifier: string | number) {
-    const pool = this.loadTop100Leaders() || this.BASE_ELITE_LEADERS;
+    const loaded = this.loadTop100Leaders() || [];
+    const baseSet = new Set(this.BASE_ELITE_LEADERS.map(b => b.guid || String(b.entry)));
+    const pool = [...this.BASE_ELITE_LEADERS, ...loaded.filter((l: any) => !baseSet.has(l.guid || String(l.entry)))];
     const strId = String(identifier).trim().toLowerCase();
     const numericId = parseInt(strId, 10);
 
