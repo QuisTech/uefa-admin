@@ -160,9 +160,17 @@ export class ManagerSnapshotService {
     return null;
   }
 
-  public static getEliteLeaderProfile(entryId: number) {
+  public static getEliteLeaderProfile(identifier: string | number) {
     const pool = this.loadTop100Leaders() || this.BASE_ELITE_LEADERS;
-    return pool.find((l: any) => l.entry === entryId || l.rank === entryId) || null;
+    const strId = String(identifier).trim();
+    const numericId = parseInt(strId, 10);
+
+    return pool.find((l: any) => 
+      (l.entry && (l.entry === numericId || String(l.entry) === strId)) || 
+      (l.rank && (l.rank === numericId || String(l.rank) === strId)) ||
+      (l.guid && strId.includes(l.guid)) ||
+      (l.uefa_url && strId.includes(l.guid))
+    ) || null;
   }
 
   public static async getDynamicTopManagerInsight(

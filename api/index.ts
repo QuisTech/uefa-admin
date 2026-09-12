@@ -503,13 +503,14 @@ export class UEFAService {
   }
 
   public static async syncTeam(teamId: string, riskMode: string) {
-    let numericId = parseInt(teamId) || 101001;
+    const rawId = (teamId || '').trim();
+    let numericId = parseInt(rawId) || 101001;
 
-    // Check if manager is an elite leader profile
-    const eliteProfile = ManagerSnapshotService.getEliteLeaderProfile(numericId);
+    // Check if manager is an elite leader profile by GUID, URL, Entry ID, or Rank
+    const eliteProfile = ManagerSnapshotService.getEliteLeaderProfile(rawId);
     let targetSquadIds: number[] = [];
-    let mgrName = `UEFA Manager #${numericId}`;
-    let tName = `UCL Squad #${numericId}`;
+    let mgrName = eliteProfile?.manager_name || `UEFA Manager #${numericId}`;
+    let tName = eliteProfile?.team_name || `UCL Squad #${numericId}`;
     let targetCaptainId: number | undefined = undefined;
 
     if (eliteProfile && eliteProfile.squad && eliteProfile.squad.length > 0) {
