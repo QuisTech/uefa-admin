@@ -1,4 +1,5 @@
 import axios from 'axios';
+import express from 'express';
 import { 
   UEFAPlayer, UEFATeam, UEFAFixture, ScoredPlayer, 
   UEFAPlayerSchema, UEFATeamSchema, UEFAFixtureSchema,
@@ -594,3 +595,69 @@ export class UEFAService {
     };
   }
 }
+
+const app = express();
+app.use(express.json());
+
+app.get("/api/user", async (_req, res) => {
+  res.json({ tier: 'ai-agent' });
+});
+
+app.get("/api/recommendations", async (req, res) => {
+  try {
+    const riskMode = (req.query.riskMode as string) || 'safe';
+    const budget = req.query.budget ? parseFloat(req.query.budget as string) : 100.0;
+    const fuel = (req.query.fuel as string) || 'native';
+    const tier = (req.query.tier as string) || 'ai-agent';
+    const scenario = (req.query.scenario as any) || 'quant';
+    const targetMatchday = req.query.matchday ? parseInt(req.query.matchday as string) : undefined;
+    
+    const lockedPlayerIds = req.query.lockedPlayerIds 
+      ? (req.query.lockedPlayerIds as string).split(',').map(id => parseInt(id)).filter(id => !isNaN(id))
+      : [];
+    const excludedPlayerIds = req.query.excludedPlayerIds 
+      ? (req.query.excludedPlayerIds as string).split(',').map(id => parseInt(id)).filter(id => !isNaN(id))
+      : [];
+
+    const result = await UEFAService.getRecommendations(
+      riskMode, 
+      budget, 
+      tier, 
+      fuel, 
+      scenario, 
+      lockedPlayerIds, 
+      excludedPlayerIds, 
+      targetMatchday
+    );
+    res.json(result);
+  } catch (error: any) {
+    console.error("[UEFA API Error]:", error.message || error);
+    res.status(500).json({ error: error.message || "Failed to generate recommendations" });
+  }
+});
+
+app.get("/api/sync/:teamId", async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const riskMode = (req.query.riskMode as string) || 'safe';
+    const result = await UEFAService.syncTeam(teamId, riskMode);
+    res.json(result);
+  } catch (error: any) {
+    console.error("[UEFA Sync Error]:", error.message || error);
+    res.status(500).json({ error: error.message || "Failed to sync team" });
+  }
+});
+
+app.get("/api/live/:matchdayId", async (req, res) => {
+  try {
+    const { matchdayId } = req.params;
+    const result = await UEFAService.getLiveMatchday(parseInt(matchdayId));
+    res.json(result);
+  } catch (error: any) {
+    console.error("[UEFA Live Error]:", error.message || error);
+    res.status(500).json({ error: error.message || "Failed to fetch live data" });
+  }
+});
+
+export default app;
+

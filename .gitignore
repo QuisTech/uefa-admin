@@ -37,3 +37,4 @@ Thumbs.db
 # Scratch files
 scratch_*.js
 data/snapshots/
+.vercel
