@@ -111,8 +111,8 @@ export class UEFAService {
       const teamShort = teamObj?.shortName || p.cCode || p.tName || 'UNK';
 
       const cd = consensusMap.get(pId);
-      const isStartingWeapon = cd?.isStartingWeapon || (p.selPer && p.selPer >= 30 && cost >= 8.0);
-      const isBenchEnabler = cd?.isBenchEnabler || (pos === 'DEF' || pos === 'GKP') && cost <= 4.5;
+      const isStartingWeapon = Boolean(cd?.isStartingWeapon || (!!p.selPer && p.selPer >= 30 && cost >= 8.0));
+      const isBenchEnabler = Boolean(cd?.isBenchEnabler || ((pos === 'DEF' || pos === 'GKP') && cost <= 4.5));
       const convictionIndex = cd?.convictionIndex || Math.round((p.selPer || 0) * 1.2);
 
       // Score adjustments per Risk Mode
@@ -121,6 +121,23 @@ export class UEFAService {
         if ((p.selPer || 0) < 15) score *= 1.25; // Differential alpha boost
       }
       if (cost >= 10.0) score *= 1.15; // Premium captaincy protection
+
+      // Calculate next 3 fixtures with FDR difficulty
+      const pTeamId = Number(p.tId);
+      const playerFixtures = fixtures.filter((f: any) => Number(f.htId) === pTeamId || Number(f.atId) === pTeamId);
+      const next3Fix = playerFixtures.slice(0, 3).map((f: any) => {
+        const isHome = Number(f.htId) === pTeamId;
+        const oppShort = isHome ? (f.atCCode || f.atShortName || 'OPP') : (f.htCCode || f.htShortName || 'OPP');
+        const oppName = isHome ? (f.atName || '') : (f.htName || '');
+        const isElite = /real madrid|man city|bayern|barcelona|arsenal|paris|inter|liverpool/i.test(oppName + ' ' + oppShort);
+        const difficulty = isHome ? (isElite ? 4 : 2) : (isElite ? 5 : 3);
+        return {
+          event: Number(f.mdId) || matchday,
+          opponent: oppShort,
+          difficulty,
+          is_home: isHome
+        };
+      });
 
       return {
         ...p,
@@ -136,7 +153,7 @@ export class UEFAService {
         team_name: p.tName || teamObj?.webName || 'Unknown',
         team_short_name: teamShort,
         position: pos,
-        next_fixtures: [],
+        next_fixtures: next3Fix,
         isCaptain: false,
         isViceCaptain: false,
         eo: cd?.ownershipRate ? Math.round(cd.ownershipRate * 100) : (p.selPer || 0),
@@ -272,7 +289,11 @@ export class UEFAService {
       squad = [...gkps, ...defs, ...mids, ...fwds];
     }
 
-    const startingXIIds = solveStartingXI(oracle, matchday, squad.map(p => p.id), params, lockedSet);
+    const xiLockedSet = new Set(lockedSet);
+    if (scenario === 'template' && topInsight?.consensusCaptain) {
+      xiLockedSet.add(topInsight.consensusCaptain.id);
+    }
+    const startingXIIds = solveStartingXI(oracle, matchday, squad.map(p => p.id), params, xiLockedSet);
     const startingXIIdSet = new Set(startingXIIds);
 
     const startingXI = squad.filter(p => startingXIIdSet.has(p.id));
@@ -285,9 +306,19 @@ export class UEFAService {
     startingXI.forEach((p, idx) => { p.position_in_squad = idx + 1; });
     bench.forEach((p, idx) => { p.position_in_squad = 12 + idx; });
 
-    const { captain: captainId, viceCaptain: vcId } = solveCaptain(oracle, matchday, startingXI.map(p => p.id), params);
-    const captain = startingXI.find(p => p.id === captainId) || startingXI[0];
-    const viceCaptain = startingXI.find(p => p.id === vcId && p.id !== captainId) || startingXI[1] || captain;
+    let captain: ScoredPlayer;
+    let viceCaptain: ScoredPlayer;
+
+    if (scenario === 'template' && topInsight?.consensusCaptain && startingXI.some(p => p.id === topInsight.consensusCaptain?.id)) {
+      captain = startingXI.find(p => p.id === topInsight.consensusCaptain?.id)!;
+      const otherXI = startingXI.filter(p => p.id !== captain.id);
+      const { viceCaptain: vcId } = solveCaptain(oracle, matchday, otherXI.map(p => p.id), params);
+      viceCaptain = otherXI.find(p => p.id === vcId) || otherXI[0] || captain;
+    } else {
+      const { captain: captainId, viceCaptain: vcId } = solveCaptain(oracle, matchday, startingXI.map(p => p.id), params);
+      captain = startingXI.find(p => p.id === captainId) || startingXI[0];
+      viceCaptain = startingXI.find(p => p.id === vcId && p.id !== captainId) || startingXI[1] || captain;
+    }
 
     if (captain) captain.isCaptain = true;
     if (viceCaptain) viceCaptain.isViceCaptain = true;
@@ -419,6 +450,18 @@ export class UEFAService {
       fwd: scored.filter(p => p.position === 'FWD').sort((a, b) => (b.xP || 0) - (a.xP || 0)).slice(0, 6),
     };
 
+    if (topInsight?.consensusCaptain) {
+      const consensusCapId = topInsight.consensusCaptain.id;
+      topInsight.consensusCaptain.isQuantCaptainMatch = (captain?.id === consensusCapId);
+
+      squad.forEach(p => {
+        if (p.id === consensusCapId) {
+          p.isConsensusCaptain = true;
+          p.consensusCaptainRate = topInsight.consensusCaptain?.captainRate;
+        }
+      });
+    }
+
     return {
       squad,
       startingXI,
@@ -459,49 +502,87 @@ export class UEFAService {
   }
 
   public static async syncTeam(teamId: string, riskMode: string) {
-    const recs = await this.getRecommendations(riskMode);
-    const numericId = parseInt(teamId) || 101001;
-    const matchday = recs.nextEventId || 1;
+    let numericId = parseInt(teamId) || 101001;
 
-    // Archive synced squad decision into ManagerSnapshotService
-    const syncedSnap = {
-      season: '2026',
-      matchday,
-      manager_id: numericId,
-      manager_name: `UEFA Manager #${numericId}`,
-      team_name: `UCL Squad #${numericId}`,
-      overall_rank: Math.max(1, Math.round(numericId / 1000)),
-      total_points: Math.round(recs.expectedPoints),
-      normalized_total_points: Math.round(recs.expectedPoints),
-      chip_deduction: 0,
-      chips_used: [],
-      squad_15: recs.squad.map(p => p.id),
-      starting_xi: recs.startingXI.map(p => p.id),
-      captain_id: recs.captain?.id || null,
-      vice_captain_id: recs.viceCaptain?.id || null,
-      transfers_in: [],
-      transfers_out: [],
-      bank: 0.5,
-      team_value: recs.totalCost,
-      timestamp: Date.now()
-    };
+    // Check if manager is an elite leader profile
+    const eliteProfile = ManagerSnapshotService.getEliteLeaderProfile(numericId);
+    let targetSquadIds: number[] = [];
+    let mgrName = `UEFA Manager #${numericId}`;
+    let tName = `UCL Squad #${numericId}`;
+    let targetCaptainId: number | undefined = undefined;
 
-    const archive = ManagerSnapshotService.loadSnapshot(matchday);
-    const existing = archive?.decisions || [];
-    const updated = [syncedSnap, ...existing.filter(d => d.manager_id !== numericId)];
-    ManagerSnapshotService.saveSnapshot('2026', matchday, updated);
+    if (eliteProfile && eliteProfile.squad && eliteProfile.squad.length > 0) {
+      targetSquadIds = eliteProfile.squad;
+      mgrName = eliteProfile.manager_name;
+      tName = eliteProfile.team_name;
+      targetCaptainId = eliteProfile.captainId;
+    } else {
+      // Check if manager snapshot exists in archive
+      const matchday = 1;
+      const archive = ManagerSnapshotService.loadSnapshot(matchday);
+      const existingSnap = archive?.decisions?.find(d => d.manager_id === numericId);
+      if (existingSnap && existingSnap.squad_15 && existingSnap.squad_15.length > 0) {
+        targetSquadIds = existingSnap.squad_15;
+        mgrName = existingSnap.manager_name || mgrName;
+        tName = existingSnap.team_name || tName;
+        targetCaptainId = existingSnap.captain_id || undefined;
+      }
+    }
+
+    // Generate complete recommendation response with this manager's squad locked
+    const recs = await this.getRecommendations(
+      riskMode,
+      100.0,
+      'ai-agent',
+      'native',
+      'quant',
+      targetSquadIds.length > 0 ? targetSquadIds : undefined
+    );
+
+    // If a designated captain was specified for this manager, ensure they are in startingXI and marked captain
+    if (targetCaptainId && recs.startingXI) {
+      let capInXI = recs.startingXI.find(p => p.id === targetCaptainId);
+      if (!capInXI && recs.bench) {
+        const benchIndex = recs.bench.findIndex(p => p.id === targetCaptainId);
+        if (benchIndex !== -1) {
+          const capCandidate = recs.bench[benchIndex];
+          // Prefer swapping with an outfield player of same position in startingXI
+          let swapXIIdx = recs.startingXI.findIndex(p => p.position === capCandidate.position);
+          if (swapXIIdx === -1) {
+            // Or any outfield player
+            swapXIIdx = recs.startingXI.findIndex(p => p.position !== 'GKP');
+          }
+          if (swapXIIdx !== -1) {
+            const replaced = recs.startingXI[swapXIIdx];
+            recs.startingXI[swapXIIdx] = capCandidate;
+            recs.bench[benchIndex] = replaced;
+            capInXI = capCandidate;
+          }
+        }
+      }
+
+      if (capInXI) {
+        recs.startingXI.forEach(p => { p.isCaptain = false; p.isViceCaptain = false; });
+        if (recs.bench) {
+          recs.bench.forEach(p => { p.isCaptain = false; p.isViceCaptain = false; });
+        }
+        capInXI.isCaptain = true;
+        recs.captain = capInXI;
+        const vc = recs.startingXI.find(p => p.id !== targetCaptainId);
+        if (vc) {
+          vc.isViceCaptain = true;
+          recs.viceCaptain = vc;
+        }
+      }
+    }
 
     return {
-      squad: recs.squad,
-      transfers: [],
-      chips: [
-        { chip: 'Wildcard', recommendation: 'HOLD' as const, reason: 'Squad status healthy for upcoming matchday' },
-        { chip: 'Limitless', recommendation: 'AVOID' as const, reason: 'Reserve for heavy blank/double fixture matchdays' }
-      ],
-      bank: 0.5,
-      totalCost: recs.totalCost,
-      managerInfo: { id: numericId, teamName: `UCL Squad #${numericId}`, managerName: `UEFA Manager #${numericId}` },
-      matchday
+      ...recs,
+      managerInfo: {
+        id: numericId,
+        teamName: tName,
+        managerName: mgrName
+      }
     };
   }
 

@@ -57,19 +57,51 @@ export const MetricsColumn: React.FC<MetricsColumnProps> = ({ data, riskMode, sc
         </div>
       </div>
 
-      {/* Top Captain Card */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-5 shadow-xl backdrop-blur-md">
-        <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Top Recommendation</h2>
-        <div className="flex items-center gap-4 bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
-          <div className="w-10 h-10 bg-gradient-to-tr from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+      {/* Captaincy Command Card: Optimal vs Consensus */}
+      <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-5 shadow-xl backdrop-blur-md space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Captaincy Command</h2>
+          {data?.topManagerInsight?.consensusCaptain && (
+            <span className="text-[8.5px] font-mono font-bold bg-amber-400/10 text-amber-300 border border-amber-400/20 px-2 py-0.5 rounded">
+              👑 {data.topManagerInsight.consensusCaptain.captainPercentage}% Herd Pick
+            </span>
+          )}
+        </div>
+
+        {/* Optimal Pick */}
+        <div className="flex items-center gap-3 bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
+          <div className="w-10 h-10 bg-gradient-to-tr from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
             <Star className="w-5 h-5 text-slate-950 font-black" />
           </div>
-          <div>
-            <p className="text-[10px] text-slate-400 uppercase font-black">{data?.captain?.team_name || data?.startingXI[0]?.team_name || "Top Club"}</p>
-            <p className="text-sm font-black text-white">{data?.captain?.web_name || data?.startingXI[0]?.web_name || "Top Pick"}</p>
-            <p className="text-[10px] text-cyan-400 font-bold">Captain Pick (2x Multiplier)</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-slate-400 uppercase font-black">{data?.captain?.team_name || "Top Club"}</p>
+              <span className="text-[9px] font-mono font-black text-cyan-400">{data?.captain?.xP?.toFixed(1)} xP</span>
+            </div>
+            <p className="text-sm font-black text-white truncate">{data?.captain?.web_name || "Top Pick"}</p>
+            <p className="text-[9.5px] text-emerald-400 font-bold">Optimal Engine Captain (2×)</p>
           </div>
         </div>
+
+        {/* Elite Consensus Captain (if different from optimal pick) */}
+        {data?.topManagerInsight?.consensusCaptain && data.topManagerInsight.consensusCaptain.web_name !== data?.captain?.web_name && (
+          <div className="flex items-center gap-3 bg-purple-950/30 p-2.5 rounded-2xl border border-purple-500/30 text-xs">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-amber-300 shrink-0 text-sm">
+              👑
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-bold uppercase text-purple-300">Elite Consensus</span>
+                <span className="text-[9px] font-mono font-black text-amber-300">
+                  {data.topManagerInsight.consensusCaptain.captainPercentage}% Armband
+                </span>
+              </div>
+              <p className="text-xs font-black text-white truncate">
+                {data.topManagerInsight.consensusCaptain.full_name || data.topManagerInsight.consensusCaptain.web_name} (€{data.topManagerInsight.consensusCaptain.cost.toFixed(1)}M)
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Engine Diagnostics */}

@@ -1,33 +1,19 @@
 import React, { useState } from 'react';
 import { RecommendationResponse, ScoredPlayer } from '../types';
 import { Zap, Shield, Eye, EyeOff, Layout, List, Lock, Ban, X, ArrowRightLeft } from 'lucide-react';
+import { PlayerCard } from './PlayerCard';
 
 interface PitchViewProps {
   data: RecommendationResponse | null;
-  onSelectPlayer: (player: ScoredPlayer) => void;
-  scenario: 'quant' | 'template';
-  setScenario: (sc: 'quant' | 'template') => void;
+  onSelectPlayer?: (player: ScoredPlayer) => void;
+  scenario?: 'quant' | 'template';
+  setScenario?: (sc: 'quant' | 'template') => void;
   lockedPlayerIds?: number[];
   excludedPlayerIds?: number[];
   onToggleLock?: (id: number) => void;
   onToggleExclude?: (id: number) => void;
+  onClearConstraints?: () => void;
 }
-
-const getFdrBadgeColor = (difficulty?: number) => {
-  switch (difficulty) {
-    case 1:
-    case 2:
-      return "bg-emerald-400 text-slate-950 font-black";
-    case 3:
-      return "bg-slate-700 text-slate-200 font-bold";
-    case 4:
-      return "bg-rose-600 text-white font-black";
-    case 5:
-      return "bg-rose-900 text-white font-black";
-    default:
-      return "bg-slate-800 text-slate-400";
-  }
-};
 
 const getPosBadgeColor = (pos?: string) => {
   switch (pos) {
@@ -44,114 +30,16 @@ const getPosBadgeColor = (pos?: string) => {
   }
 };
 
-export interface TeamKit {
-  primary: string;
-  secondary: string;
-  sleeve: string;
-  pattern?: 'stripes' | 'sleeves' | 'chest' | 'solid';
-  textColor: string;
-}
-
-export const getTeamKit = (teamCode: string = '', isGkp: boolean = false): TeamKit => {
-  if (isGkp) {
-    return {
-      primary: '#00e676', // Neon GKP Emerald Green
-      secondary: '#00a152',
-      sleeve: '#00e676',
-      pattern: 'solid',
-      textColor: '#020617'
-    };
-  }
-
-  const code = (teamCode || '').toUpperCase().trim();
-
-  switch (code) {
-    case 'RMA': // Real Madrid - All White with Gold
-      return { primary: '#ffffff', secondary: '#e2b13c', sleeve: '#ffffff', pattern: 'solid', textColor: '#0f172a' };
-    case 'MCI': // Man City - Sky Blue
-      return { primary: '#6cabdd', secondary: '#1c2d5a', sleeve: '#6cabdd', pattern: 'solid', textColor: '#ffffff' };
-    case 'BAY': // Bayern Munich - Red
-      return { primary: '#dc052d', secondary: '#ffffff', sleeve: '#dc052d', pattern: 'solid', textColor: '#ffffff' };
-    case 'BAR': // Barcelona - Blaugrana Stripes
-      return { primary: '#004d98', secondary: '#a50044', sleeve: '#004d98', pattern: 'stripes', textColor: '#ffffff' };
-    case 'ARS': // Arsenal - Red body, White sleeves
-      return { primary: '#ef0107', secondary: '#ffffff', sleeve: '#ffffff', pattern: 'sleeves', textColor: '#ffffff' };
-    case 'PSG': // Paris Saint-Germain - Navy with Red stripe
-      return { primary: '#002342', secondary: '#da291c', sleeve: '#002342', pattern: 'chest', textColor: '#ffffff' };
-    case 'INT': // Inter Milan - Nerazzurri Black & Blue
-      return { primary: '#000000', secondary: '#0053a0', sleeve: '#000000', pattern: 'stripes', textColor: '#ffffff' };
-    case 'LIV': // Liverpool - Crimson Red
-      return { primary: '#c8102e', secondary: '#f6eb61', sleeve: '#c8102e', pattern: 'solid', textColor: '#ffffff' };
-    case 'BVB': // Dortmund - Yellow & Black
-      return { primary: '#fde100', secondary: '#000000', sleeve: '#fde100', pattern: 'solid', textColor: '#000000' };
-    case 'LEV': // Bayer Leverkusen - Red body, Black sleeves
-      return { primary: '#e32219', secondary: '#000000', sleeve: '#000000', pattern: 'sleeves', textColor: '#ffffff' };
-    case 'ATM': // Atletico Madrid - Red & White Stripes
-      return { primary: '#cb3524', secondary: '#ffffff', sleeve: '#cb3524', pattern: 'stripes', textColor: '#ffffff' };
-    case 'PSV': // PSV Eindhoven - Red & White Stripes
-      return { primary: '#ee1c25', secondary: '#ffffff', sleeve: '#ee1c25', pattern: 'stripes', textColor: '#ffffff' };
-    case 'AVL': // Aston Villa - Claret body, Sky sleeves
-      return { primary: '#670e36', secondary: '#95bfe6', sleeve: '#95bfe6', pattern: 'sleeves', textColor: '#ffffff' };
-    case 'RBL': // RB Leipzig - White body, Red shoulders
-      return { primary: '#ffffff', secondary: '#dd0741', sleeve: '#dd0741', pattern: 'sleeves', textColor: '#0f172a' };
-    case 'JUV': // Juventus - Black & White Stripes
-      return { primary: '#000000', secondary: '#ffffff', sleeve: '#000000', pattern: 'stripes', textColor: '#ffffff' };
-    case 'MIL': // AC Milan - Red & Black Stripes
-      return { primary: '#fb090b', secondary: '#000000', sleeve: '#000000', pattern: 'stripes', textColor: '#ffffff' };
-    case 'ATA': // Atalanta - Blue & Black Stripes
-      return { primary: '#1e71b8', secondary: '#000000', sleeve: '#000000', pattern: 'stripes', textColor: '#ffffff' };
-    case 'BEN': // Benfica - Red
-      return { primary: '#e30613', secondary: '#ffffff', sleeve: '#e30613', pattern: 'solid', textColor: '#ffffff' };
-    case 'SCP': // Sporting CP - Green & White Stripes
-      return { primary: '#008057', secondary: '#ffffff', sleeve: '#008057', pattern: 'stripes', textColor: '#ffffff' };
-    case 'CEL': // Celtic - Green & White Hoops
-      return { primary: '#008542', secondary: '#ffffff', sleeve: '#008542', pattern: 'stripes', textColor: '#ffffff' };
-    default:
-      return { primary: '#00e5ff', secondary: '#002342', sleeve: '#00e5ff', pattern: 'solid', textColor: '#0f172a' };
-  }
-};
-
-const JerseySVG: React.FC<{ kit: TeamKit; size?: number }> = ({ kit, size = 42 }) => {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" className="drop-shadow-lg filter shrink-0">
-      {/* Short Sleeves Left & Right */}
-      <path d="M 15 25 L 30 18 L 35 38 L 22 45 Z" fill={kit.sleeve} stroke="#000000" strokeWidth="2" />
-      <path d="M 85 25 L 70 18 L 65 38 L 78 45 Z" fill={kit.sleeve} stroke="#000000" strokeWidth="2" />
-
-      {/* Main Jersey Body */}
-      <path d="M 30 18 L 70 18 L 75 82 C 75 85, 25 85, 25 82 Z" fill={kit.primary} stroke="#000000" strokeWidth="2.5" />
-
-      {/* Vertical Stripe Pattern */}
-      {kit.pattern === 'stripes' && (
-        <g stroke="#000000" strokeWidth="1.2">
-          <rect x="42" y="19" width="7" height="63" fill={kit.secondary} />
-          <rect x="55" y="19" width="7" height="63" fill={kit.secondary} />
-          <rect x="68" y="21" width="5" height="60" fill={kit.secondary} />
-          <rect x="29" y="21" width="5" height="60" fill={kit.secondary} />
-        </g>
-      )}
-
-      {/* Central Chest Stripe Pattern */}
-      {kit.pattern === 'chest' && (
-        <rect x="44" y="19" width="12" height="63" fill={kit.secondary} stroke="#000000" strokeWidth="1.2" />
-      )}
-
-      {/* Collar Accent */}
-      <path d="M 38 18 C 45 28, 55 28, 62 18 Z" fill="#000000" />
-      <path d="M 40 18 C 46 25, 54 25, 60 18 Z" fill="#ffffff" />
-    </svg>
-  );
-};
-
 export const PitchView: React.FC<PitchViewProps> = ({
   data,
   onSelectPlayer,
-  scenario,
+  scenario = 'quant',
   setScenario,
   lockedPlayerIds = [],
   excludedPlayerIds = [],
   onToggleLock,
-  onToggleExclude
+  onToggleExclude,
+  onClearConstraints
 }) => {
   const [showFixtures, setShowFixtures] = useState(true);
   const [viewMode, setViewMode] = useState<'pitch' | 'list'>('pitch');
@@ -182,60 +70,62 @@ export const PitchView: React.FC<PitchViewProps> = ({
 
   return (
     <div className="flex-grow flex flex-col justify-start space-y-3 py-1 w-full max-w-5xl mx-auto animate-fadeIn">
-      {/* 🌟 Scenario Switcher & Delta Comparison Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-950/90 p-2.5 rounded-2xl border border-slate-800 backdrop-blur-md shadow-lg">
-        {/* Left: Scenario Toggle Buttons */}
-        <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
-          <button
-            onClick={() => setScenario('quant')}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-              scenario === 'quant'
-                ? 'bg-cyan-500 text-slate-950 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span>Quant Optimum</span>
-          </button>
-          <button
-            onClick={() => setScenario('template')}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-              scenario === 'template'
-                ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5 text-purple-300" />
-            <span>Template Shield</span>
-          </button>
-        </div>
-
-        {/* Right: Delta Metric Badges */}
-        {delta && (
-          <div className="flex items-center gap-2 text-[10px] font-mono w-full sm:w-auto justify-between sm:justify-end">
-            <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800">
-              <span className="text-slate-500 font-bold uppercase text-[8px]">Delta xP</span>
-              <span className={`font-black font-mono ${delta.xpDiff >= 0 ? "text-emerald-400" : "text-amber-400"}`}>
-                {delta.xpDiff > 0 ? `+${delta.xpDiff.toFixed(1)}` : delta.xpDiff.toFixed(1)} pts
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800">
-              <span className="text-slate-500 font-bold uppercase text-[8px]">Delta EO</span>
-              <span className={`font-black font-mono ${delta.eoDiff >= 0 ? "text-cyan-400" : "text-slate-300"}`}>
-                {delta.eoDiff > 0 ? `+${delta.eoDiff.toFixed(1)}` : delta.eoDiff.toFixed(1)}%
-              </span>
-            </div>
-
-            {delta.swaps?.length > 0 && (
-              <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800 hidden md:flex">
-                <ArrowRightLeft className="w-3 h-3 text-slate-400" />
-                <span className="text-slate-300 font-bold">{delta.swaps.length} Swaps</span>
-              </div>
-            )}
+      {/* 🌟 Top Controls: Scenario Switcher & Delta Comparison Bar */}
+      {setScenario && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-950/90 p-2.5 rounded-2xl border border-slate-800 backdrop-blur-md shadow-lg">
+          {/* Left: Scenario Toggle Buttons */}
+          <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
+            <button
+              onClick={() => setScenario('quant')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                scenario === 'quant'
+                  ? 'bg-cyan-500 text-slate-950 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Quant Optimum</span>
+            </button>
+            <button
+              onClick={() => setScenario('template')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                scenario === 'template'
+                  ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5 text-purple-300" />
+              <span>Template Shield</span>
+            </button>
           </div>
-        )}
-      </div>
+
+          {/* Right: Delta Metric Badges */}
+          {delta && (
+            <div className="flex items-center gap-2 text-[10px] font-mono w-full sm:w-auto justify-between sm:justify-end">
+              <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800">
+                <span className="text-slate-500 font-bold uppercase text-[8px]">Delta xP</span>
+                <span className={`font-black font-mono ${delta.xpDiff >= 0 ? "text-emerald-400" : "text-amber-400"}`}>
+                  {delta.xpDiff > 0 ? `+${delta.xpDiff.toFixed(1)}` : delta.xpDiff.toFixed(1)} pts
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800">
+                <span className="text-slate-500 font-bold uppercase text-[8px]">Delta EO</span>
+                <span className={`font-black font-mono ${delta.eoDiff >= 0 ? "text-cyan-400" : "text-slate-300"}`}>
+                  {delta.eoDiff > 0 ? `+${delta.eoDiff.toFixed(1)}` : delta.eoDiff.toFixed(1)}%
+                </span>
+              </div>
+
+              {delta.swaps?.length > 0 && (
+                <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800 hidden md:flex">
+                  <ArrowRightLeft className="w-3 h-3 text-slate-400" />
+                  <span className="text-slate-300 font-bold">{delta.swaps.length} Swaps</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 📊 UEFA Matchday & Squad Diagnostics Stats Ribbon */}
       <div className="bg-slate-950/85 border border-slate-800 rounded-2xl p-2.5 backdrop-blur-md shadow-md">
@@ -246,15 +136,40 @@ export const PitchView: React.FC<PitchViewProps> = ({
               Matchday {data?.nextEventId || 1}
             </span>
             <span className="text-[10px] sm:text-xs font-bold text-white truncate">
-              {scenario === 'template' ? 'Risky Template Shield XI' : 'Quant Optimal Lineup'}
+              {scenario === 'template' ? 'Template Shield Consensus Lineup' : 'Quant Optimal Starting Lineup'}
             </span>
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-1.5 text-[9px] font-mono">
-            <span className="bg-slate-900/90 border border-slate-800 px-2 py-0.5 rounded text-emerald-400 font-bold flex items-center gap-1">
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 text-[9px] font-mono flex-wrap">
+            {/* 1. Optimal Captain Badge */}
+            <span
+              title={`Engine Recommended Captain: ${captain} (${data?.captain?.xP?.toFixed(1) || ''} xP)`}
+              className="bg-slate-900/90 border border-slate-800 px-2 py-0.5 rounded text-emerald-400 font-bold flex items-center gap-1 shadow-sm"
+            >
               <span className="w-3.5 h-3.5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[7.5px] font-black border border-white/60">C</span>
-              {captain}
+              <span className="text-slate-400 font-normal">Pick:</span> {captain}
             </span>
+
+            {/* 2. Elite Consensus Captain Badge */}
+            {data?.topManagerInsight?.consensusCaptain && (
+              <span
+                title={`Elite Consensus Captain: ${data.topManagerInsight.consensusCaptain.full_name || data.topManagerInsight.consensusCaptain.web_name} (${data.topManagerInsight.consensusCaptain.captainPercentage}% of Elite Managers)`}
+                className={`border px-2 py-0.5 rounded font-bold flex items-center gap-1 shadow-sm ${
+                  data.topManagerInsight.consensusCaptain.isQuantCaptainMatch || captain === data.topManagerInsight.consensusCaptain.web_name
+                    ? "bg-amber-500/15 border-amber-400/40 text-amber-300"
+                    : "bg-purple-950/60 border-purple-500/40 text-purple-300"
+                }`}
+              >
+                <span>👑</span>
+                <span className="text-slate-400 font-normal">Consensus C:</span> {data.topManagerInsight.consensusCaptain.full_name || data.topManagerInsight.consensusCaptain.web_name}
+                <span className="text-[8px] bg-white/10 px-1 rounded font-mono">
+                  {data.topManagerInsight.consensusCaptain.captainPercentage}%
+                </span>
+                {(data.topManagerInsight.consensusCaptain.isQuantCaptainMatch || captain === data.topManagerInsight.consensusCaptain.web_name) && (
+                  <span className="text-amber-400 text-[8px] font-black uppercase">🔥 Match</span>
+                )}
+              </span>
+            )}
           </div>
         </div>
 
@@ -289,8 +204,8 @@ export const PitchView: React.FC<PitchViewProps> = ({
 
       {/* Active Constraints Pill Bar */}
       {hasConstraints && (
-        <div className="flex flex-wrap items-center gap-1.5 px-2 py-1.5 bg-slate-950/70 border border-slate-800/90 rounded-xl backdrop-blur-sm">
-          <span className="text-[8px] font-black uppercase text-slate-500 tracking-wider mr-1">Active Rules:</span>
+        <div className="flex flex-wrap items-center gap-1.5 px-2.5 py-1.5 bg-slate-950/70 border border-slate-800/90 rounded-xl backdrop-blur-sm">
+          <span className="text-[8px] font-black uppercase text-slate-500 tracking-wider mr-1">Active Solver Rules:</span>
           {lockedPlayerIds.map(id => {
             const p = allPlayersMap.get(id);
             return (
@@ -298,7 +213,7 @@ export const PitchView: React.FC<PitchViewProps> = ({
                 <Lock className="w-2.5 h-2.5 text-amber-400" />
                 <span>{p?.web_name || `ID ${id}`}</span>
                 {onToggleLock && (
-                  <button onClick={() => onToggleLock(id)} className="hover:text-white ml-0.5">
+                  <button onClick={() => onToggleLock(id)} className="hover:text-white ml-0.5 cursor-pointer">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 )}
@@ -312,18 +227,26 @@ export const PitchView: React.FC<PitchViewProps> = ({
                 <Ban className="w-2.5 h-2.5 text-rose-400" />
                 <span>{p?.web_name || `ID ${id}`}</span>
                 {onToggleExclude && (
-                  <button onClick={() => onToggleExclude(id)} className="hover:text-white ml-0.5">
+                  <button onClick={() => onToggleExclude(id)} className="hover:text-white ml-0.5 cursor-pointer">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 )}
               </span>
             );
           })}
+          {onClearConstraints && (
+            <button
+              onClick={onClearConstraints}
+              className="text-[8px] text-slate-400 hover:text-white underline ml-auto font-bold uppercase tracking-wider cursor-pointer"
+            >
+              Clear All Rules
+            </button>
+          )}
         </div>
       )}
 
       {/* 🎛️ Pitch / List View Mode & Formation Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-1 max-w-4xl mx-auto w-full">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1 max-w-2xl sm:max-w-4xl mx-auto w-full">
         <div className="flex items-center gap-2">
           <span className="bg-slate-900 border border-slate-800 text-slate-300 font-mono font-bold text-[10px] sm:text-xs px-2.5 py-1 rounded-lg uppercase tracking-wider">
             {defs.length}-{mids.length}-{fwds.length} Formation
@@ -338,87 +261,89 @@ export const PitchView: React.FC<PitchViewProps> = ({
           <div className="flex items-center gap-1 bg-slate-900/95 p-1 rounded-lg border border-slate-800 shadow-inner">
             <button
               onClick={() => setViewMode('pitch')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                 viewMode === 'pitch'
                   ? 'bg-cyan-400 text-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <Layout className="w-3 h-3" />
-              <span>3D Pitch</span>
+              <span>Pitch</span>
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                 viewMode === 'list'
                   ? 'bg-cyan-400 text-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <List className="w-3 h-3" />
-              <span>List View</span>
+              <span>List</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 🏟️ View Mode Content: Authentic 3D Stadium Pitch or List View */}
+      {/* 🏟️ View Mode Content: Authentic Pitch or List View */}
       {viewMode === 'pitch' ? (
-        /* 🌟 Authentic Football 3D Pitch Container */
-        <div className="relative mx-auto w-full max-w-3xl py-1">
-          <div className="relative rounded-3xl shadow-2xl border-2 border-slate-800 bg-[#1ed0b0] p-2 sm:p-4 overflow-hidden">
+        /* 🌟 Authentic Football Pitch Container (1:1 Proportional Match with fpl-admin max-w-2xl) */
+        <div className="relative mx-auto w-full max-w-2xl py-0.5 sm:py-1">
+          <div className="relative rounded-2xl shadow-2xl border-2 border-slate-800 bg-[#00a350] p-1.5 sm:p-3">
             
-            {/* 🌿 Mown Grass Turf & Perspective Diagram Underlay */}
-            <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
-              {/* Grass Horizontal Lawn Stripes */}
+            {/* 🌿 Clipped Stadium Turf & Diagram Underlay (Keeps Rounded Corners without Clipping Tooltips) */}
+            <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+              {/* Realistic Mown Grass Horizontal Lawn Stripes Background */}
               <div 
                 className="absolute inset-0"
                 style={{
                   background: `repeating-linear-gradient(
                     to bottom,
-                    #1ed0b0,
-                    #1ed0b0 40px,
-                    #17b89b 40px,
-                    #17b89b 80px
+                    #00a350,
+                    #00a350 40px,
+                    #009b4d 40px,
+                    #009b4d 80px
                   )`
                 }}
               />
 
-              {/* 🏟️ Authentic Perspective Pitch Diagram SVG */}
+              {/* 🏟️ Authentic Perspective Pitch Diagram SVG (Aligned with Rows) */}
               <svg 
                 className="absolute inset-0 w-full h-full stroke-white/80 fill-none" 
                 preserveAspectRatio="none" 
                 viewBox="0 0 800 680"
               >
                 {/* Stadium Outer Flanks */}
-                <polygon points="-10,-10 105,-10 105,4 0,227 -10,227 -10,-10" className="fill-[#020617] stroke-[#020617]" strokeWidth="2" />
-                <polygon points="810,-10 695,-10 695,4 800,227 810,227 810,-10" className="fill-[#020617] stroke-[#020617]" strokeWidth="2" />
+                <polygon points="-10,-10 105,-10 105,4 0,227.44 -10,227.44 -10,-10" className="fill-[#020617] stroke-[#020617]" strokeWidth="2" />
+                <polygon points="810,-10 695,-10 695,4 800,227.44 810,227.44 810,-10" className="fill-[#020617] stroke-[#020617]" strokeWidth="2" />
                 <polygon points="105,-10 695,-10 695,4 105,4" className="fill-[#020617] stroke-[#020617]" strokeWidth="2" />
 
                 {/* Outer Touchlines */}
-                <line x1="105" y1="4" x2="0" y2="227" strokeWidth="2" className="stroke-white/70" />
-                <line x1="695" y1="4" x2="800" y2="227" strokeWidth="2" className="stroke-white/70" />
+                <line x1="105" y1="4" x2="0" y2="227.44" strokeWidth="2" className="stroke-white/70" />
+                <line x1="695" y1="4" x2="800" y2="227.44" strokeWidth="2" className="stroke-white/70" />
                 <line x1="105" y1="4" x2="695" y2="4" strokeWidth="2" className="stroke-white/70" />
 
                 {/* Left UEFA Champions League Billboard */}
                 <rect x="125" y="4" width="215" height="20" rx="4" className="fill-[#001438] stroke-none" />
-                <g transform="translate(145, 7)">
+                <g transform="translate(135, 6)">
                   <circle cx="8" cy="8" r="6" fill="#00e5ff" />
-                  <text x="20" y="11" fill="#00e5ff" fontSize="11" fontWeight="900" fontFamily="sans-serif">UEFA CHAMPIONS LEAGUE</text>
+                  <text x="20" y="12" fill="#00e5ff" fontSize="11" fontWeight="900" fontFamily="system-ui, sans-serif" letterSpacing="0.4">UEFA CHAMPIONS LEAGUE</text>
                 </g>
 
-                {/* Top Goal Net Frame */}
+                {/* Center Goal Net Frame */}
                 <rect x="340" y="4" width="120" height="20" className="fill-cyan-500/25 stroke-white" strokeWidth="2" />
                 <line x1="364" y1="4" x2="364" y2="24" strokeWidth="1" className="stroke-white/50" />
                 <line x1="388" y1="4" x2="388" y2="24" strokeWidth="1" className="stroke-white/50" />
                 <line x1="412" y1="4" x2="412" y2="24" strokeWidth="1" className="stroke-white/50" />
                 <line x1="436" y1="4" x2="436" y2="24" strokeWidth="1" className="stroke-white/50" />
+                <line x1="340" y1="10" x2="460" y2="10" strokeWidth="1" className="stroke-white/50" />
+                <line x1="340" y1="17" x2="460" y2="17" strokeWidth="1" className="stroke-white/50" />
 
                 {/* Right UEFA Billboard */}
                 <rect x="460" y="4" width="215" height="20" rx="4" className="fill-[#001438] stroke-none" />
-                <g transform="translate(485, 7)">
+                <g transform="translate(490, 6)">
                   <circle cx="8" cy="8" r="6" fill="#00e5ff" />
-                  <text x="20" y="11" fill="#00e5ff" fontSize="11" fontWeight="900" fontFamily="sans-serif">FANTASY HORIZON</text>
+                  <text x="20" y="12" fill="#00e5ff" fontSize="11" fontWeight="900" fontFamily="system-ui, sans-serif" letterSpacing="0.4">FANTASY HORIZON</text>
                 </g>
 
                 {/* Goal Line & Sidelines */}
@@ -439,10 +364,10 @@ export const PitchView: React.FC<PitchViewProps> = ({
                 <path d="M 325,125 A 85,38 0 0,0 475,125" strokeWidth="2.2" />
 
                 {/* Corner Arcs */}
-                <path d="M 117,46 A 24,24 0 0,0 149,24" strokeWidth="2.2" />
-                <path d="M 651,24 A 24,24 0 0,0 683,46" strokeWidth="2.2" />
+                <path d="M 117.0,46.8 A 24,24 0 0,0 149,24" strokeWidth="2.2" />
+                <path d="M 651,24 A 24,24 0 0,0 683.0,46.8" strokeWidth="2.2" />
 
-                {/* Halfway Line */}
+                {/* Halfway Line (Cutting horizontally through center of Forwards) */}
                 <line x1="0" y1="450" x2="800" y2="450" strokeWidth="3.5" />
                 
                 {/* Center Circle */}
@@ -451,107 +376,148 @@ export const PitchView: React.FC<PitchViewProps> = ({
               </svg>
             </div>
 
-            {/* Floating FDR Ticker Toggle */}
-            <div className="absolute top-3 right-3 z-30">
+            {/* 🎛️ Floating Fixture Ticker Toggle */}
+            <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-30">
               <button
                 onClick={() => setShowFixtures(!showFixtures)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[9px] font-extrabold uppercase tracking-wider backdrop-blur-md transition-all shadow-lg select-none ${
+                className={`flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border text-[8.5px] sm:text-[9.5px] font-extrabold uppercase tracking-wider backdrop-blur-md transition-all shadow-lg select-none cursor-pointer ${
                   showFixtures 
-                    ? "bg-slate-950/80 border-cyan-400/50 text-cyan-300" 
-                    : "bg-slate-950/50 border-white/20 text-slate-400"
+                    ? "bg-black/70 border-cyan-400/50 text-cyan-300 hover:bg-black/90 hover:border-cyan-400" 
+                    : "bg-black/40 border-white/20 text-white/70 hover:bg-black/70 hover:text-white"
                 }`}
+                title="Toggle upcoming 3-match FDR fixture ticker under players"
               >
                 {showFixtures ? (
                   <>
-                    <Eye className="w-3 h-3 text-cyan-400" />
+                    <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400" />
                     <span>3-Match FDR: On</span>
                   </>
                 ) : (
                   <>
-                    <EyeOff className="w-3 h-3 text-slate-400" />
+                    <EyeOff className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white/50" />
                     <span>3-Match FDR: Off</span>
                   </>
                 )}
               </button>
             </div>
 
-            {/* 🏟️ Starting XI 4 Tactical Rows (Matching Official UEFA Fantasy DOM: FWD -> MID -> DEF -> GK) */}
-            <div className="relative z-10 flex flex-col justify-between min-h-[420px] sm:min-h-[480px] pt-5 pb-2">
+            {/* 🏟️ Starting XI Lines on the Pitch (1:1 Proportional Match with fpl-admin) */}
+            <div className="relative z-10 flex flex-col justify-between min-h-[360px] sm:min-h-[420px] md:min-h-[490px] pt-4 pb-0.5 sm:pt-6 sm:pb-1.5">
               
-              {/* Row 1: Forwards (Top of Pitch - si-row-three) */}
-              <div className="flex justify-around items-center w-full max-w-[82%] mx-auto my-1">
-                {fwds.map(p => (
-                  <PitchPlayerNode
-                    key={p.id}
-                    player={p}
-                    showFixtures={showFixtures}
-                    onClick={() => onSelectPlayer(p)}
-                  />
-                ))}
-              </div>
-
-              {/* Row 2: Midfielders (si-row-five) */}
-              <div className="flex justify-around items-center w-full max-w-[98%] mx-auto my-1">
-                {mids.map(p => (
-                  <PitchPlayerNode
-                    key={p.id}
-                    player={p}
-                    showFixtures={showFixtures}
-                    onClick={() => onSelectPlayer(p)}
-                  />
-                ))}
-              </div>
-
-              {/* Row 3: Defenders (si-row-five) */}
-              <div className="flex justify-around items-center w-full max-w-[90%] mx-auto my-1">
-                {defs.map(p => (
-                  <PitchPlayerNode
-                    key={p.id}
-                    player={p}
-                    showFixtures={showFixtures}
-                    onClick={() => onSelectPlayer(p)}
-                  />
-                ))}
-              </div>
-
-              {/* Row 4: Goalkeeper (Bottom of Pitch - si-row-two) */}
-              <div className="flex justify-center items-center w-full my-1">
+              {/* Row 1: Goalkeeper (Inside Goalmouth & 18-Yard Box) */}
+              <div className="flex justify-center items-center w-full my-0 sm:my-0.5">
                 {gkps.map(p => (
-                  <PitchPlayerNode
+                  <PlayerCard
                     key={p.id}
                     player={p}
                     showFixtures={showFixtures}
-                    onClick={() => onSelectPlayer(p)}
+                    isCaptain={p.isCaptain}
+                    isViceCaptain={p.isViceCaptain}
+                    isLocked={lockedPlayerIds.includes(p.id)}
+                    isExcluded={excludedPlayerIds.includes(p.id)}
+                    onToggleLock={onToggleLock}
+                    onToggleExclude={onToggleExclude}
+                    onSelect={onSelectPlayer}
+                  />
+                ))}
+              </div>
+
+              {/* Row 2: Defenders (Upper Pitch between Penalty Box & Midfield) */}
+              <div className="flex justify-around items-center w-full max-w-[88%] mx-auto my-0 sm:my-0.5">
+                {defs.map(p => (
+                  <PlayerCard
+                    key={p.id}
+                    player={p}
+                    showFixtures={showFixtures}
+                    isCaptain={p.isCaptain}
+                    isViceCaptain={p.isViceCaptain}
+                    isLocked={lockedPlayerIds.includes(p.id)}
+                    isExcluded={excludedPlayerIds.includes(p.id)}
+                    onToggleLock={onToggleLock}
+                    onToggleExclude={onToggleExclude}
+                    onSelect={onSelectPlayer}
+                  />
+                ))}
+              </div>
+
+              {/* Row 3: Midfielders (Wider Middle Pitch above Halfway Line) */}
+              <div className="flex justify-around items-center w-full max-w-[98%] mx-auto my-0 sm:my-0.5">
+                {mids.map(p => (
+                  <PlayerCard
+                    key={p.id}
+                    player={p}
+                    showFixtures={showFixtures}
+                    isCaptain={p.isCaptain}
+                    isViceCaptain={p.isViceCaptain}
+                    isLocked={lockedPlayerIds.includes(p.id)}
+                    isExcluded={excludedPlayerIds.includes(p.id)}
+                    onToggleLock={onToggleLock}
+                    onToggleExclude={onToggleExclude}
+                    onSelect={onSelectPlayer}
+                  />
+                ))}
+              </div>
+
+              {/* Row 4: Forwards (Inside the Center Circle & Over Halfway Line) */}
+              <div className="flex justify-around items-center w-full max-w-[80%] mx-auto my-0 sm:my-0.5">
+                {fwds.map(p => (
+                  <PlayerCard
+                    key={p.id}
+                    player={p}
+                    showFixtures={showFixtures}
+                    isCaptain={p.isCaptain}
+                    isViceCaptain={p.isViceCaptain}
+                    isLocked={lockedPlayerIds.includes(p.id)}
+                    isExcluded={excludedPlayerIds.includes(p.id)}
+                    onToggleLock={onToggleLock}
+                    onToggleExclude={onToggleExclude}
+                    onSelect={onSelectPlayer}
                   />
                 ))}
               </div>
             </div>
 
-            {/* 🌿 Bottom Fade */}
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent via-[#020617]/70 to-[#020617] pointer-events-none z-10" />
+            {/* 🌿 Smooth Bottom Grass-to-App Background Fade */}
+            <div className="absolute inset-x-0 bottom-0 h-20 sm:h-28 bg-gradient-to-b from-transparent via-[#020617]/70 to-[#020617] pointer-events-none z-10" />
 
             {/* 🪑 Official Substitutes Bench Dugout Shelf */}
-            <div className="relative z-20 w-full max-w-[95%] mx-auto mt-2 rounded-2xl border border-white/15 bg-slate-950/60 backdrop-blur-md p-2 shadow-2xl">
-              <div className="flex justify-around items-end gap-1.5 px-1">
-                {bench.map((p, idx) => (
-                  <div key={p.id} className="flex flex-col items-center gap-0.5">
-                    <div className="text-[8px] font-mono font-extrabold uppercase tracking-wider text-cyan-300 border-b border-dotted border-white/30 pb-0.5 px-1">
-                      {idx === 0 ? 'GKP' : `SUB ${idx}`}
+            <div className="relative z-20 w-full max-w-[94%] mx-auto mt-0.5 sm:mt-1.5 rounded-xl border border-white/15 bg-[#020617]/50 backdrop-blur-md p-1.5 sm:p-2.5 shadow-2xl">
+              <div className="flex justify-around items-end gap-0.5 sm:gap-1.5 px-0.5 sm:px-1">
+                {bench.map((p, idx) => {
+                  const isGkp = idx === 0 || p.position === 'GKP';
+                  const subLabel = isGkp ? 'GKP' : `${idx}. ${p.position || 'SUB'}`;
+
+                  return (
+                    <div key={p.id} className="flex flex-col items-center gap-0.5">
+                      {/* Official Position / Auto-Sub Priority Header Label */}
+                      <div className="text-[8px] sm:text-[9px] font-mono font-extrabold uppercase tracking-wider text-cyan-200 border-b border-dotted border-white/40 pb-0.5 px-0.5">
+                        {subLabel}
+                      </div>
+
+                      {/* Semi-transparent frosted slot card wrapper */}
+                      <div className="bg-white/10 rounded-lg p-0.5 sm:p-1 border border-white/15 shadow-inner">
+                        <PlayerCard
+                          player={p}
+                          compact
+                          benchIndex={idx}
+                          showFixtures={showFixtures}
+                          isCaptain={p.isCaptain}
+                          isViceCaptain={p.isViceCaptain}
+                          isLocked={lockedPlayerIds.includes(p.id)}
+                          isExcluded={excludedPlayerIds.includes(p.id)}
+                          onToggleLock={onToggleLock}
+                          onToggleExclude={onToggleExclude}
+                          onSelect={onSelectPlayer}
+                        />
+                      </div>
                     </div>
-                    <div className="bg-white/10 rounded-xl p-1 border border-white/15 shadow-inner">
-                      <PitchPlayerNode
-                        player={p}
-                        compact
-                        showFixtures={showFixtures}
-                        onClick={() => onSelectPlayer(p)}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              <p className="text-center text-white font-extrabold text-[10px] tracking-wider mt-1 drop-shadow-md">
-                Substitutes Dugout
+              {/* Substitutes Header Label */}
+              <p className="text-center text-white font-extrabold text-[10px] sm:text-[11px] tracking-wider mt-1 drop-shadow-md">
+                Substitutes
               </p>
             </div>
 
@@ -566,7 +532,7 @@ export const PitchView: React.FC<PitchViewProps> = ({
                 <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
                 <span className="text-xs font-black uppercase tracking-wider text-white">Starting XI Lineup</span>
                 <span className="text-[10px] font-mono bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-bold border border-slate-700">
-                  11 Players
+                  {startingXI.length} Players
                 </span>
               </div>
               <div className="text-xs font-mono font-bold text-cyan-400">
@@ -590,7 +556,7 @@ export const PitchView: React.FC<PitchViewProps> = ({
                   {startingXI.map(p => (
                     <tr 
                       key={p.id} 
-                      onClick={() => onSelectPlayer(p)}
+                      onClick={() => onSelectPlayer && onSelectPlayer(p)}
                       className="hover:bg-slate-900/70 transition-colors cursor-pointer"
                     >
                       <td className="py-2.5 px-3 whitespace-nowrap">
@@ -606,7 +572,7 @@ export const PitchView: React.FC<PitchViewProps> = ({
                               C
                             </span>
                           )}
-                          {p.isStartingWeapon && (
+                          {Boolean(p.isStartingWeapon) && (
                             <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">
                               SW
                             </span>
@@ -634,72 +600,6 @@ export const PitchView: React.FC<PitchViewProps> = ({
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-interface PitchPlayerNodeProps {
-  player: ScoredPlayer;
-  compact?: boolean;
-  showFixtures?: boolean;
-  onClick: () => void;
-}
-
-const PitchPlayerNode: React.FC<PitchPlayerNodeProps> = ({ player, compact = false, showFixtures = false, onClick }) => {
-  const nextFix = player.next_fixtures?.[0];
-  const isGkp = player.position === 'GKP';
-  const kit = getTeamKit(player.team_short_name || player.team_name, isGkp);
-
-  return (
-    <div
-      onClick={onClick}
-      className={`group relative cursor-pointer flex flex-col items-center transition-all duration-300 hover:scale-105 shrink-0 ${compact ? 'max-w-[70px]' : 'max-w-[95px]'}`}
-    >
-      {/* Captain / Vice Captain Badge */}
-      {player.isCaptain && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 px-2 py-0.5 text-[8.5px] font-black rounded-full bg-amber-400 text-slate-950 shadow border border-amber-200 whitespace-nowrap">
-          CAPTAIN (2x)
-        </span>
-      )}
-
-      {/* Starting Weapon Badge */}
-      {player.isStartingWeapon && !player.isCaptain && (
-        <span className="absolute -top-3 right-0 z-20 px-1 py-0.2 text-[8px] font-black rounded bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 border border-amber-300 shadow">
-          SW
-        </span>
-      )}
-
-      {/* Official Vector Jersey Kit Container */}
-      <div className={`relative flex items-center justify-center transition-all ${compact ? 'w-10 h-10' : 'w-12 h-12 sm:w-14 sm:h-14'}`}>
-        <JerseySVG kit={kit} size={compact ? 36 : 46} />
-        
-        {/* xP overlay badge on the jersey */}
-        <span className="absolute inset-0 flex items-center justify-center pt-1 text-[11px] sm:text-xs font-black font-mono drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.9)]" style={{ color: kit.textColor }}>
-          {player.xP.toFixed(1)}
-        </span>
-      </div>
-
-      {/* Nameplate Card */}
-      <div className="mt-1 px-1.5 py-0.5 rounded-lg bg-slate-950/95 border border-slate-800 text-center w-full shadow-md">
-        <div className="text-[10px] sm:text-[11px] font-bold text-white truncate">{player.web_name}</div>
-        <div className="text-[8.5px] text-slate-400 flex items-center justify-center gap-1 font-mono">
-          <span>€{player.cost.toFixed(1)}M</span>
-          <span>•</span>
-          <span className="text-cyan-300 font-bold">{player.eo ?? player.ownership ?? 0}%</span>
-        </div>
-
-        {/* Optional 3-Match FDR Ticker */}
-        {showFixtures && nextFix && !compact && (
-          <div className="mt-0.5 pt-0.5 border-t border-slate-800/80 flex items-center justify-center gap-1">
-            <span className="text-[8px] font-mono text-slate-300 truncate">
-              {nextFix.opponent} ({nextFix.is_home ? 'H' : 'A'})
-            </span>
-            <span className={`text-[7.5px] font-mono px-1 py-0.2 rounded ${getFdrBadgeColor(nextFix.difficulty)}`}>
-              {nextFix.difficulty}
-            </span>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

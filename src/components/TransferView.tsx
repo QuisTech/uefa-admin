@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RecommendationResponse, ScoredPlayer } from '../types';
 import { Cpu, Shield, Zap, Search, Lock, Unlock, XCircle, CheckCircle } from 'lucide-react';
+import { PlayerPhoto } from './PlayerPhoto';
 
 interface TransferViewProps {
   data: RecommendationResponse | null;
@@ -180,10 +181,21 @@ export const TransferView: React.FC<TransferViewProps> = ({
                         key={player.id}
                         className="glass-card p-2.5 rounded-xl flex items-center justify-between hover:border-cyan-500/40 transition-all text-xs"
                       >
-                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onSelectPlayer(player)}>
-                          <span className="font-bold text-white">{player.web_name}</span>
-                          <span className="text-slate-500">{player.team_short_name}</span>
-                          <span className="text-cyan-300 font-semibold">€{player.cost.toFixed(1)}M</span>
+                        <div className="flex items-center gap-2.5 min-w-0 cursor-pointer" onClick={() => onSelectPlayer(player)}>
+                          <PlayerPhoto
+                            playerId={player.id}
+                            playerName={player.web_name}
+                            position={player.position}
+                            teamShortName={player.team_short_name}
+                            sizeClassName="w-8 h-8"
+                            roundedClassName="rounded-lg"
+                          />
+                          <div className="min-w-0">
+                            <div className="font-bold text-white truncate">{player.web_name}</div>
+                            <div className="text-[10px] text-slate-400">
+                              <span>{player.team_short_name}</span> • <span className="text-cyan-300 font-mono font-semibold">€{player.cost.toFixed(1)}M</span>
+                            </div>
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-3">

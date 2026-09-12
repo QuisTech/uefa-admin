@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ShieldCheck, AlertTriangle, Cpu, HelpCircle, ChevronDown, ChevronUp, Sparkles, Lock, Ban } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Cpu, HelpCircle, ChevronDown, ChevronUp, Sparkles, Lock, Ban, Crown } from 'lucide-react';
 import { RecommendationResponse } from '../types';
+import { PlayerPhoto } from './PlayerPhoto';
 
 interface EngineDiagnosticsProps {
   data: RecommendationResponse | null;
@@ -241,6 +242,15 @@ export const EngineDiagnostics = ({ data, onSyncTeamId }: EngineDiagnosticsProps
               )}
             </div>
 
+            {/* Source transparency banner */}
+            <div className="flex items-center justify-between px-2.5 py-1 bg-slate-950/70 border border-cyan-500/20 rounded-lg text-[9px] font-mono">
+              <span className="flex items-center gap-1.5 text-cyan-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Official UEFA MD1 World Leaderboard ({data.topManagerInsight.sampleLeaders?.length || 100} Live Leaders)
+              </span>
+              <span className="text-slate-400">Live UEFA.com Data</span>
+            </div>
+
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1 text-[11px] border border-slate-800/40 rounded-xl p-1 bg-slate-950/40">
               {data.topManagerInsight.sampleLeaders
                 .filter(m => {
@@ -300,13 +310,13 @@ export const EngineDiagnostics = ({ data, onSyncTeamId }: EngineDiagnosticsProps
                             </button>
                           )}
                           <a 
-                            href={`https://gaming.uefa.com/en/uclfantasy/entry/${m.entry}`} 
+                            href={m.uefa_url || (m.guid ? `https://gaming.uefa.com/en/uclfantasy/team/${m.guid}/${Array.from(m.manager_name || m.team_name).map(c => c.charCodeAt(0).toString(16).padStart(4, '0')).join('')}/0/0/0/Worldleaderboard?typeId=0031` : `https://gaming.uefa.com/en/uclfantasy/overview`)} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="text-[8.5px] font-mono text-cyan-300 bg-slate-900 border border-slate-700/80 hover:border-cyan-500/40 px-2 py-0.5 rounded-md hover:bg-slate-800 transition-all flex items-center gap-1"
-                            title="Open Manager Account on Official UEFA Website"
+                            className="text-[8.5px] font-mono text-cyan-300 bg-slate-900 border border-slate-700/80 hover:border-cyan-500/40 px-2 py-0.5 rounded-md hover:bg-slate-800 transition-all flex items-center gap-1 hover:text-cyan-200"
+                            title={`Open ${m.team_name} (${m.manager_name}) directly on official UEFA website`}
                           >
-                            ID: {m.entry} ↗
+                            UEFA Team ↗
                           </a>
                         </div>
                       </div>
@@ -324,11 +334,166 @@ export const EngineDiagnostics = ({ data, onSyncTeamId }: EngineDiagnosticsProps
                   </span>
                   <span 
                     className="text-[8.5px] font-mono font-bold text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 px-2 py-0.5 rounded cursor-help"
-                    title={`Calculated across ${data.topManagerInsight.eligibleManagers || data.topManagerInsight.noChipLeaderCount} active 0-chip elite managers`}
+                    title={`Derived directly from the verified 15-man squads of ${data.topManagerInsight.sampleLeaders?.length || data.topManagerInsight.eligibleManagers} official UEFA Matchday 1 leaders`}
                   >
-                    Elite cohort: {data.topManagerInsight.eligibleManagers || data.topManagerInsight.noChipLeaderCount} managers
+                    Verified Cohort: {data.topManagerInsight.sampleLeaders?.length || data.topManagerInsight.eligibleManagers} Official Leaders
                   </span>
                 </div>
+
+                {/* 👑 Consensus Captaincy Intelligence Hub */}
+                {data.topManagerInsight.consensusCaptain && (
+                  <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-slate-900/90 border border-amber-500/30 shadow-lg space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-amber-300">
+                        <Crown className="w-4 h-4 text-amber-400" />
+                        <span>Elite Consensus Captaincy Hub</span>
+                      </div>
+                      <span className="text-[8.5px] font-mono font-bold bg-amber-400/15 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full">
+                        {data.topManagerInsight.consensusCaptain.captainPercentage}% Herd Armband
+                      </span>
+                    </div>
+
+                    {/* Spotlight Cards: Consensus Captain & Vice-Captain */}
+                    <div className="grid grid-cols-1 gap-2 text-xs">
+                      {/* #1 Consensus Captain */}
+                      <div className="p-2.5 rounded-xl bg-slate-950/80 border border-amber-400/40 shadow-sm space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-[10px] font-black text-amber-400 bg-amber-400/10 border border-amber-400/30 px-1.5 py-0.5 rounded uppercase whitespace-nowrap">
+                              #1 CAPTAIN
+                            </span>
+                            <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded ${getPositionBadge(data.topManagerInsight.consensusCaptain.position)}`}>
+                              {data.topManagerInsight.consensusCaptain.position}
+                            </span>
+                            {data.topManagerInsight.consensusCaptain.team_code && (
+                              <span className="text-[8px] font-black text-slate-300 bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded uppercase font-mono">
+                                {data.topManagerInsight.consensusCaptain.team_code}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-base font-black font-mono text-amber-300">
+                              {data.topManagerInsight.consensusCaptain.captainPercentage}%
+                            </span>
+                            <span className="text-[8px] text-slate-400 font-bold uppercase ml-1">Vote</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <PlayerPhoto
+                            playerId={data.topManagerInsight.consensusCaptain.id}
+                            playerName={data.topManagerInsight.consensusCaptain.full_name || data.topManagerInsight.consensusCaptain.web_name}
+                            position={data.topManagerInsight.consensusCaptain.position}
+                            sizeClassName="w-10 h-10"
+                            roundedClassName="rounded-xl"
+                            showSpotlight={true}
+                            className="border border-amber-400/40 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <div className="font-extrabold text-white text-[13.5px] truncate drop-shadow-sm leading-tight">
+                              {data.topManagerInsight.consensusCaptain.full_name || data.topManagerInsight.consensusCaptain.web_name}
+                            </div>
+                            <div className="text-[9px] text-slate-400 font-mono mt-0.5 flex items-center gap-1.5 whitespace-nowrap">
+                              <span className="text-slate-200 font-bold">€{data.topManagerInsight.consensusCaptain.cost.toFixed(1)}M</span>
+                              <span>•</span>
+                              <span>{data.topManagerInsight.consensusCaptain.captainCount} of {data.topManagerInsight.eligibleManagers} managers</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* #2 Consensus Vice-Captain */}
+                      {data.topManagerInsight.consensusViceCaptain && (
+                        <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 shadow-sm space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-[10px] font-black text-cyan-400 bg-cyan-400/10 border border-cyan-400/30 px-1.5 py-0.5 rounded uppercase whitespace-nowrap">
+                                #2 RUNNER-UP
+                              </span>
+                              <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded ${getPositionBadge(data.topManagerInsight.consensusViceCaptain.position)}`}>
+                                {data.topManagerInsight.consensusViceCaptain.position}
+                              </span>
+                              {data.topManagerInsight.consensusViceCaptain.team_code && (
+                                <span className="text-[8px] font-black text-slate-300 bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded uppercase font-mono">
+                                  {data.topManagerInsight.consensusViceCaptain.team_code}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-base font-black font-mono text-cyan-300">
+                                {data.topManagerInsight.consensusViceCaptain.captainPercentage}%
+                              </span>
+                              <span className="text-[8px] text-slate-400 font-bold uppercase ml-1">Vote</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <PlayerPhoto
+                              playerId={data.topManagerInsight.consensusViceCaptain.id}
+                              playerName={data.topManagerInsight.consensusViceCaptain.full_name || data.topManagerInsight.consensusViceCaptain.web_name}
+                              position={data.topManagerInsight.consensusViceCaptain.position}
+                              sizeClassName="w-10 h-10"
+                              roundedClassName="rounded-xl"
+                              className="border border-slate-700 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="font-extrabold text-white text-[13.5px] truncate drop-shadow-sm leading-tight">
+                                {data.topManagerInsight.consensusViceCaptain.full_name || data.topManagerInsight.consensusViceCaptain.web_name}
+                              </div>
+                              <div className="text-[9px] text-slate-400 font-mono mt-0.5 flex items-center gap-1.5 whitespace-nowrap">
+                                <span className="text-slate-200 font-bold">€{data.topManagerInsight.consensusViceCaptain.cost.toFixed(1)}M</span>
+                                <span>•</span>
+                                <span>{data.topManagerInsight.consensusViceCaptain.captainCount} of {data.topManagerInsight.eligibleManagers} managers</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Captaincy Vote Share Distribution Bars */}
+                    {data.topManagerInsight.captaincyDistribution && data.topManagerInsight.captaincyDistribution.length > 0 && (
+                      <div className="space-y-1.5 pt-1 border-t border-slate-800/80">
+                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                          <span>Top 5 Captaincy Vote Share</span>
+                          <span>Sum: {data.topManagerInsight.captaincyDistribution.reduce((acc, c) => acc + c.captainPercentage, 0)}%</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {data.topManagerInsight.captaincyDistribution.map(c => (
+                            <div key={c.id} className="flex items-center justify-between gap-2 text-[10px] bg-slate-950/40 p-1.5 rounded-lg border border-slate-850">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <PlayerPhoto
+                                  playerId={c.id}
+                                  playerName={c.full_name || c.web_name}
+                                  position={c.position}
+                                  sizeClassName="w-5 h-5"
+                                  roundedClassName="rounded shrink-0"
+                                />
+                                <span className="font-extrabold text-slate-200 text-[11px] whitespace-nowrap">
+                                  {c.full_name || c.web_name}
+                                </span>
+                                {c.team_code && (
+                                  <span className="text-[8px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1 py-0.2 rounded uppercase shrink-0">
+                                    {c.team_code}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <div className="w-16 h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800 shrink-0">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full"
+                                    style={{ width: `${Math.min(100, c.captainPercentage * 2.5)}%` }}
+                                  />
+                                </div>
+                                <span className="w-8 text-right font-mono font-black text-amber-300 shrink-0 whitespace-nowrap">{c.captainPercentage}%</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Starting Weapons: Split into Top 11 Primary XI vs Rotation Candidates */}
                 {(() => {
@@ -341,43 +506,75 @@ export const EngineDiagnostics = ({ data, onSyncTeamId }: EngineDiagnosticsProps
                   return (
                     <div className="space-y-3">
                       {/* Top 11 Primary XI Core Weapons */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[9.5px] pb-1 border-b border-amber-500/20">
-                          <span className="flex items-center gap-1 font-black uppercase text-amber-400 tracking-wider">
-                            <span>🔥</span>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-[10px] pb-1.5 border-b border-amber-500/20">
+                          <span className="flex items-center gap-1.5 font-black uppercase text-amber-400 tracking-wider">
+                            <span className="text-sm">🔥</span>
                             <span>Top 11 Primary XI Core ({primaryXI.length})</span>
                           </span>
-                          <span className="text-[8px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                          <span className="text-[8.5px] text-emerald-400 font-mono font-black bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/25 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                             Core Starters
                           </span>
                         </div>
-                        <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                           {primaryXI.map(p => (
                             <div 
                               key={p.id} 
-                              className="bg-slate-950/90 hover:bg-slate-900 rounded-xl border border-amber-500/25 hover:border-amber-500/50 p-2 transition-all space-y-1"
+                              className="bg-slate-950/90 hover:bg-slate-900/95 rounded-xl border border-amber-500/25 hover:border-amber-400/50 p-2.5 transition-all shadow-sm space-y-2"
                               title={p.xiJustification}
                             >
+                              {/* Top Row: Rank, Photo, Complete Full Name, Club Code, Price */}
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <span className="text-[9px] font-mono font-black text-amber-400 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded shrink-0">
+                                  <span className="text-[10px] font-mono font-black text-amber-300 bg-amber-400/15 border border-amber-400/30 w-5 h-5 rounded flex items-center justify-center shrink-0">
                                     #{p.xiRank}
                                   </span>
+                                  <PlayerPhoto
+                                    playerId={p.id}
+                                    playerName={p.full_name || p.web_name}
+                                    position={p.position}
+                                    sizeClassName="w-7 h-7"
+                                    roundedClassName="rounded-md"
+                                    className="border border-slate-700/80 shrink-0"
+                                  />
+                                  <div className="min-w-0 flex items-center gap-1.5">
+                                    <span className="text-[13px] font-black text-white whitespace-nowrap tracking-tight">
+                                      {p.full_name || p.web_name}
+                                    </span>
+                                    {p.team_code && (
+                                      <span className="text-[8.5px] font-mono font-black text-slate-300 bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded uppercase shrink-0">
+                                        {p.team_code}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <span className="text-[11px] font-mono font-extrabold text-slate-200 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-md whitespace-nowrap">
+                                    €{p.cost.toFixed(1)}M
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Bottom Row: Position Badge + Start Rate & Captaincy Rate */}
+                              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-900 text-[9.5px] font-mono">
+                                <div className="flex items-center gap-1.5">
                                   <span className={`text-[8.5px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
                                     {p.position}
                                   </span>
-                                  <span className="text-[11.5px] font-black text-white truncate drop-shadow-sm" title={p.web_name}>
-                                    {p.web_name}
-                                  </span>
+                                  <span className="text-[9px] text-slate-400">Core Starter</span>
                                 </div>
 
-                                <div className="flex items-center gap-1 font-mono text-[8.5px] shrink-0">
-                                  <span className="text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded">
-                                    {Math.round(p.startRate * 100)}% Start
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="inline-flex items-center gap-1 text-emerald-300 font-bold bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md whitespace-nowrap">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                                    <span>{Math.round(p.startRate * 100)}% Start</span>
                                   </span>
                                   {p.captainRate > 0 && (
-                                    <span className="text-amber-300 font-bold bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.5 rounded">
-                                      {Math.round(p.captainRate * 100)}% Cap
+                                    <span className="inline-flex items-center gap-1 text-amber-300 font-bold bg-amber-400/15 border border-amber-400/30 px-2 py-0.5 rounded-md whitespace-nowrap shrink-0">
+                                      <span>👑</span>
+                                      <span>{Math.round(p.captainRate * 100)}% Cap</span>
                                     </span>
                                   )}
                                 </div>
@@ -389,39 +586,63 @@ export const EngineDiagnostics = ({ data, onSyncTeamId }: EngineDiagnosticsProps
 
                       {/* Squad Rotation Weapons (Rank 12+) */}
                       {rotationPool.length > 0 && (
-                        <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-                          <div className="flex items-center justify-between text-[9.5px] pb-1 border-b border-slate-800">
-                            <span className="flex items-center gap-1 font-black uppercase text-slate-400 tracking-wider">
+                        <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                          <div className="flex items-center justify-between text-[10px] pb-1 border-b border-slate-800">
+                            <span className="flex items-center gap-1.5 font-black uppercase text-slate-400 tracking-wider">
                               <span>🔄</span>
                               <span>Squad Rotation Options ({rotationPool.length})</span>
                             </span>
-                            <span className="text-[8px] text-slate-400 font-mono">Rank #12+</span>
+                            <span className="text-[8px] text-slate-400 font-mono bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded">Rank #12+</span>
                           </div>
-                          <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                             {rotationPool.map(p => (
                               <div 
                                 key={p.id} 
-                                className="bg-slate-950/60 hover:bg-slate-900 rounded-xl border border-slate-800/80 hover:border-slate-700 p-2 transition-all space-y-1"
+                                className="bg-slate-950/60 hover:bg-slate-900 rounded-xl border border-slate-800/80 hover:border-slate-700 p-2.5 transition-all space-y-2"
                                 title={p.xiJustification}
                               >
+                                {/* Top Row: Rank, Photo, Complete Full Name, Club Code, Price */}
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-2 min-w-0">
-                                    <span className="text-[9px] font-mono font-bold text-slate-400 bg-slate-800/80 border border-slate-700 px-1.5 py-0.5 rounded shrink-0">
+                                    <span className="text-[9px] font-mono font-bold text-slate-400 bg-slate-800/80 border border-slate-700 w-5 h-5 rounded flex items-center justify-center shrink-0">
                                       #{p.xiRank}
                                     </span>
-                                    <span className={`text-[8.5px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
-                                      {p.position}
-                                    </span>
-                                    <span className="text-[11px] font-bold text-slate-200 truncate" title={p.web_name}>
-                                      {p.web_name}
-                                    </span>
+                                    <PlayerPhoto
+                                      playerId={p.id}
+                                      playerName={p.full_name || p.web_name}
+                                      position={p.position}
+                                      sizeClassName="w-7 h-7"
+                                      roundedClassName="rounded-md"
+                                      className="border border-slate-800 shrink-0"
+                                    />
+                                    <div className="min-w-0 flex items-center gap-1.5">
+                                      <span className="text-[12px] font-bold text-slate-200 whitespace-nowrap">
+                                        {p.full_name || p.web_name}
+                                      </span>
+                                      {p.team_code && (
+                                        <span className="text-[8px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1 py-0.5 rounded uppercase shrink-0">
+                                          {p.team_code}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
 
-                                  <div className="flex items-center gap-1 font-mono text-[8.5px] shrink-0">
-                                    <span className="text-slate-400 font-bold bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded">
-                                      {Math.round(p.startRate * 100)}% Start
+                                  <span className="text-[10.5px] font-mono font-bold text-slate-300 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded shrink-0 whitespace-nowrap">
+                                    €{p.cost.toFixed(1)}M
+                                  </span>
+                                </div>
+
+                                {/* Bottom Row: Position Badge + Start Rate */}
+                                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-900/80 text-[9px] font-mono">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
+                                      {p.position}
                                     </span>
+                                    <span className="text-slate-400 text-[8.5px]">Rotation Option</span>
                                   </div>
+                                  <span className="text-slate-400 font-bold bg-slate-900 border border-slate-800 px-2 py-0.5 rounded whitespace-nowrap shrink-0">
+                                    {Math.round(p.startRate * 100)}% Start
+                                  </span>
                                 </div>
                               </div>
                             ))}
@@ -440,31 +661,57 @@ export const EngineDiagnostics = ({ data, onSyncTeamId }: EngineDiagnosticsProps
                   if (enablers.length === 0) return null;
                   return (
                     <div className="space-y-1.5 pt-1">
-                      <div className="flex items-center justify-between text-[9px]">
+                      <div className="flex items-center justify-between text-[9.5px]">
                         <span className="flex items-center gap-1 font-black uppercase text-cyan-400 tracking-wider">
                           <span>🪑</span>
                           <span>Bench Enablers ({enablers.length})</span>
                         </span>
                         <span className="text-[8px] text-slate-400 font-mono">Ranked by Bench % & Value</span>
                       </div>
-                      <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                         {enablers.map(p => (
                           <div 
                             key={p.id} 
-                            className="flex items-center justify-between px-2.5 py-1.5 bg-slate-950/80 hover:bg-slate-900 rounded-xl border border-slate-800/80 hover:border-cyan-500/30 transition-all text-[10px]"
-                            title={`${p.web_name}: €${p.cost.toFixed(1)}M, ${p.benchCount}/${p.eligibleManagers} benched (${Math.round(p.benchRate * 100)}%), ${p.startCount}/${p.eligibleManagers} starts (${Math.round(p.startRate * 100)}%), Conviction: ${p.convictionScore}`}
+                            className="bg-slate-950/80 hover:bg-slate-900 rounded-xl border border-slate-800/80 hover:border-cyan-500/30 p-2.5 transition-all space-y-2 text-[10px]"
+                            title={`${p.full_name || p.web_name}: €${p.cost.toFixed(1)}M, ${p.benchCount}/${p.eligibleManagers} benched (${Math.round(p.benchRate * 100)}%), ${p.startCount}/${p.eligibleManagers} starts (${Math.round(p.startRate * 100)}%), Conviction: ${p.convictionScore}`}
                           >
-                            <div className="flex items-center gap-2 min-w-0 pr-2">
-                              <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
-                                {p.position}
-                              </span>
-                              <span className="text-slate-300 font-semibold truncate">{p.web_name}</span>
-                              <span className="text-[8.5px] text-slate-400 font-mono bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-800 shrink-0">
+                            {/* Top Row: Photo, Complete Name, Club Code, Price */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <PlayerPhoto
+                                  playerId={p.id}
+                                  playerName={p.full_name || p.web_name}
+                                  position={p.position}
+                                  sizeClassName="w-7 h-7"
+                                  roundedClassName="rounded-md"
+                                  className="border border-slate-800 shrink-0"
+                                />
+                                <div className="min-w-0 flex items-center gap-1.5">
+                                  <span className="text-slate-200 font-bold text-[12px] whitespace-nowrap">
+                                    {p.full_name || p.web_name}
+                                  </span>
+                                  {p.team_code && (
+                                    <span className="text-[8px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1 py-0.5 rounded uppercase shrink-0">
+                                      {p.team_code}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <span className="text-[10.5px] text-slate-300 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0 whitespace-nowrap">
                                 €{p.cost.toFixed(1)}M
                               </span>
                             </div>
-                            <div className="flex items-center gap-1 font-mono text-[8.5px] shrink-0 whitespace-nowrap">
-                              <span className={`font-bold px-1.5 py-0.5 rounded border ${
+
+                            {/* Bottom Row: Position Badge + Bench Rate */}
+                            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-900 text-[9px] font-mono">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 ${getPositionBadge(p.position)}`}>
+                                  {p.position}
+                                </span>
+                                <span className="text-slate-400 text-[8.5px]">Enabler Asset</span>
+                              </div>
+                              <span className={`font-bold px-2 py-0.5 rounded-md border whitespace-nowrap shrink-0 ${
                                 p.benchRate >= 0.20
                                   ? 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
                                   : p.benchRate >= 0.10 

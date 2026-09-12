@@ -11,7 +11,7 @@ import { FixtureList } from './components/FixtureList';
 import { PerformanceView } from './components/PerformanceView';
 import { AIAgentView } from './components/AIAgentView';
 import { ChipAdvisor } from './components/ChipAdvisor';
-import { PlayerCard } from './components/PlayerCard';
+import { PlayerDetailModal } from './components/PlayerDetailModal';
 import { RefreshCw, Camera } from 'lucide-react';
 
 export function App() {
@@ -29,6 +29,9 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<ScoredPlayer | null>(null);
+
+  const [syncedManager, setSyncedManager] = useState<{ id: string; name: string; teamName: string } | null>(null);
+  const [syncNotification, setSyncNotification] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -89,14 +92,30 @@ export function App() {
     try {
       const res = await fetch(`/api/sync/${target}?riskMode=${riskMode}`);
       if (!res.ok) throw new Error('Failed to sync manager team squad');
-      await fetchData();
+      const syncData = await res.json();
+
+      if (syncData.squad && syncData.squad.length > 0) {
+        const syncedIds = syncData.squad.map((p: any) => p.id);
+        setLockedPlayerIds(syncedIds);
+      }
+
+      const mgrName = syncData.managerInfo?.managerName || `UEFA Manager #${target}`;
+      const tName = syncData.managerInfo?.teamName || `UCL Squad #${target}`;
+      setSyncedManager({ id: target, name: mgrName, teamName: tName });
+      setSyncNotification(`⚡ Team ID #${target} (${tName}) synchronized! Squad locked into Horizon strategy engine.`);
+      setData(syncData);
       setTab('pitch');
-      alert(`⚡ Team ID #${target} synchronized successfully! Strategic recommendations and pitch layout updated.`);
     } catch (err: any) {
       alert(`Team sync error: ${err.message}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResetSync = () => {
+    setSyncedManager(null);
+    setLockedPlayerIds([]);
+    setSyncNotification(null);
   };
 
   if (loading && !data) {
@@ -113,6 +132,28 @@ export function App() {
       {error && (
         <div className="max-w-[1400px] mx-auto mb-4 p-4 bg-rose-500/10 border border-rose-500/50 rounded-2xl text-rose-400 text-xs font-mono">
           <span className="font-bold uppercase mr-2">[Engine Error]:</span> {error}
+        </div>
+      )}
+
+      {syncedManager && (
+        <div className="max-w-[1400px] mx-auto mb-4 p-3.5 bg-cyan-950/80 border border-cyan-500/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <span className="text-cyan-400 text-base">⚡</span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-black text-white uppercase">Synced Manager Squad:</span>
+                <span className="text-xs font-bold text-cyan-300">{syncedManager.teamName}</span>
+                <span className="text-[10px] font-mono bg-cyan-500/20 text-cyan-200 px-2 py-0.5 rounded border border-cyan-500/30">ID #{syncedManager.id}</span>
+              </div>
+              <p className="text-[10px] text-slate-300 font-mono mt-0.5">Manager: {syncedManager.name} • 15 Squad Players loaded and locked into pitch layout & optimization engine</p>
+            </div>
+          </div>
+          <button
+            onClick={handleResetSync}
+            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer"
+          >
+            Reset to Global Optimum
+          </button>
         </div>
       )}
 
@@ -197,6 +238,14 @@ export function App() {
                 onSelectPlayer={setSelectedPlayer}
                 scenario={scenario}
                 setScenario={setScenario}
+                lockedPlayerIds={lockedPlayerIds}
+                excludedPlayerIds={excludedPlayerIds}
+                onToggleLock={toggleLock}
+                onToggleExclude={toggleExclude}
+                onClearConstraints={() => {
+                  setLockedPlayerIds([]);
+                  setExcludedPlayerIds([]);
+                }}
               />
             )}
             {tab === 'picks' && (
@@ -256,7 +305,7 @@ export function App() {
       </div>
 
       {/* Player Modal */}
-      <PlayerCard player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+      <PlayerDetailModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
     </div>
   );
 }

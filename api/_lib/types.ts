@@ -77,6 +77,8 @@ export interface ScoredPlayer extends UEFAPlayer {
   next_fixtures: { event?: number; opponent: string; difficulty: number; is_home?: boolean }[];
   isCaptain: boolean;
   isViceCaptain: boolean;
+  isConsensusCaptain?: boolean;
+  consensusCaptainRate?: number;
   position_in_squad?: number;
   multiplier?: number;
   eo?: number;
@@ -156,6 +158,8 @@ export interface EliteIntelligenceConfig {
 export interface EliteConsensusDetail {
   id: number;
   web_name: string;
+  full_name?: string;
+  team_code?: string;
   position: string;
   cost: number;
   squadCount: number;
@@ -183,6 +187,32 @@ export interface EliteConsensusDetail {
   xiJustification?: string;
 }
 
+export interface ConsensusCaptainDetail {
+  id: number;
+  web_name: string;
+  full_name?: string;
+  team_code?: string;
+  position: string;
+  cost: number;
+  captainRate: number;
+  captainPercentage: number;
+  captainCount: number;
+  eligibleManagers: number;
+  isQuantCaptainMatch?: boolean;
+}
+
+export interface CaptaincyDistributionItem {
+  id: number;
+  web_name: string;
+  full_name?: string;
+  team_code?: string;
+  position: string;
+  cost: number;
+  captainRate: number;
+  captainPercentage: number;
+  captainCount: number;
+}
+
 export interface TopManagerInsight {
   noChipLeaderCount: number;
   eligibleManagers: number;
@@ -191,6 +221,8 @@ export interface TopManagerInsight {
   sampleLeaders: Array<{
     rank: number;
     entry: number;
+    guid?: string;
+    uefa_url?: string;
     manager_name: string;
     team_name: string;
     total_points: number;
@@ -202,6 +234,9 @@ export interface TopManagerInsight {
   marketDisagreementRating: number;
   eliteConsensusPicks: string[];
   consensusDetails: EliteConsensusDetail[];
+  consensusCaptain?: ConsensusCaptainDetail;
+  consensusViceCaptain?: ConsensusCaptainDetail;
+  captaincyDistribution?: CaptaincyDistributionItem[];
 }
 
 export interface RecommendationResponse {

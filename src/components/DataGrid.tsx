@@ -1,6 +1,7 @@
 import React from 'react';
 import { RecommendationResponse, ScoredPlayer } from '../types';
 import { Lock, XCircle, Sparkles } from 'lucide-react';
+import { PlayerPhoto } from './PlayerPhoto';
 
 interface DataGridProps {
   data: RecommendationResponse | null;
@@ -52,7 +53,19 @@ export const DataGrid: React.FC<DataGridProps> = ({
               return (
                 <tr key={player.id} className="hover:bg-slate-900/50 transition-colors">
                   <td className="p-3 font-bold text-cyan-400">{player.position}</td>
-                  <td className="p-3 font-bold text-white">{player.web_name}</td>
+                  <td className="p-3 font-bold text-white">
+                    <div className="flex items-center gap-2.5">
+                      <PlayerPhoto
+                        playerId={player.id}
+                        playerName={player.web_name}
+                        position={player.position}
+                        teamShortName={player.team_short_name}
+                        sizeClassName="w-8 h-8"
+                        roundedClassName="rounded-lg"
+                      />
+                      <span>{player.web_name}</span>
+                    </div>
+                  </td>
                   <td className="p-3 text-slate-400">{player.team_short_name}</td>
                   <td className="p-3 text-cyan-300 font-mono">€{player.cost.toFixed(1)}M</td>
                   <td className="p-3 font-extrabold text-cyan-400 font-mono">{player.xP.toFixed(1)}</td>

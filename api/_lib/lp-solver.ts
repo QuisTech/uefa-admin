@@ -54,9 +54,23 @@ export function solveOptimalSquad(
   lockedIds?: Set<number>,
   excludedIds?: Set<number>
 ): number[] {
+  // If exactly 15 squad players are locked (e.g. from syncing a manager squad), return immediately
+  if (lockedIds && lockedIds.size >= 15) {
+    return Array.from(lockedIds).slice(0, 15);
+  }
+
   const allIds = oracle.getAllPlayerIds();
-  const actualBudget = params.budgetMultiplier ? Math.floor(budget * params.budgetMultiplier) : budget;
+  let actualBudget = params.budgetMultiplier ? Math.floor(budget * params.budgetMultiplier) : budget;
   
+  if (lockedIds && lockedIds.size > 0) {
+    const lockedCost = Array.from(lockedIds).reduce((sum, id) => sum + oracle.getCost(id), 0);
+    const remainingSlots = Math.max(0, 15 - lockedIds.size);
+    const minRequired = lockedCost + remainingSlots * 40;
+    if (minRequired > actualBudget) {
+      actualBudget = minRequired;
+    }
+  }
+
   const model: LPSolverModel = {
     optimize: "score",
     opType: "max",
@@ -77,10 +91,10 @@ export function solveOptimalSquad(
     }
   };
 
-  if (params.minEoTotal) {
+  if (params.minEoTotal && (!lockedIds || lockedIds.size < 5)) {
     model.constraints['eo_total'] = { min: params.minEoTotal };
   }
-  if (params.minElitePlayers) {
+  if (params.minElitePlayers && (!lockedIds || lockedIds.size < 5)) {
     model.constraints['elite_total'] = { min: params.minElitePlayers };
   }
 
@@ -243,12 +257,11 @@ export function solveStartingXI(
   const scored = squadIds.map(id => {
     const rawPos = (oracle.getPosition(id) || 'MID').toUpperCase();
     const pos = rawPos === 'GK' ? 'GKP' : rawPos;
-    return {
-      id,
-      pos,
-      isLocked: lockedIds ? lockedIds.has(id) : false,
-      score: getPlayerScore(oracle, matchday, id, 1, params)
-    };
+    const isLocked = !!(lockedIds && lockedIds.has(id));
+    const rawScore = getPlayerScore(oracle, matchday, id, 1, params);
+    // Give locked players a priority boost in selection only if a subset of the squad is locked
+    const score = rawScore + (isLocked && lockedIds && lockedIds.size < 11 ? 1000 : 0);
+    return { id, pos, isLocked, score, rawScore };
   });
 
   const gkps = scored.filter(p => p.pos === 'GKP').sort((a, b) => b.score - a.score);
@@ -256,70 +269,53 @@ export function solveStartingXI(
   const mids = scored.filter(p => p.pos === 'MID').sort((a, b) => b.score - a.score);
   const fwds = scored.filter(p => p.pos === 'FWD').sort((a, b) => b.score - a.score);
 
-  if (gkps.length >= 1 && defs.length >= 3 && mids.length >= 2 && fwds.length >= 1) {
-    const starters: typeof scored = [gkps[0]];
+  if (gkps.length === 0) return squadIds.slice(0, 11);
 
-    const lockedDefs = defs.filter(p => p.isLocked).slice(0, 5);
-    const lockedMids = mids.filter(p => p.isLocked).slice(0, 5);
-    const lockedFwds = fwds.filter(p => p.isLocked).slice(0, 3);
-    starters.push(...lockedDefs, ...lockedMids, ...lockedFwds);
+  const bestGkp = gkps[0];
 
-    const starterIdSet = new Set(starters.map(p => p.id));
+  // Legal UEFA Champions League Fantasy Formations (1 GKP + 10 outfield players = 11 starters)
+  const legalFormations = [
+    { d: 3, m: 5, f: 2 },
+    { d: 3, m: 4, f: 3 },
+    { d: 4, m: 4, f: 2 },
+    { d: 4, m: 3, f: 3 },
+    { d: 4, m: 5, f: 1 },
+    { d: 5, m: 3, f: 2 },
+    { d: 5, m: 4, f: 1 },
+    { d: 5, m: 2, f: 3 }
+  ];
 
-    const currentDefs = starters.filter(p => p.pos === 'DEF').length;
-    const currentMids = starters.filter(p => p.pos === 'MID').length;
-    const currentFwds = starters.filter(p => p.pos === 'FWD').length;
+  let bestStarters: number[] = [];
+  let bestScore = -Infinity;
 
-    const neededDefs = Math.max(0, 3 - currentDefs);
-    const neededMids = Math.max(0, 2 - currentMids);
-    const neededFwds = Math.max(0, 1 - currentFwds);
+  for (const { d, m, f } of legalFormations) {
+    if (defs.length >= d && mids.length >= m && fwds.length >= f) {
+      const selectedDefs = defs.slice(0, d);
+      const selectedMids = mids.slice(0, m);
+      const selectedFwds = fwds.slice(0, f);
+      const formationScore = bestGkp.score +
+        selectedDefs.reduce((s, p) => s + p.score, 0) +
+        selectedMids.reduce((s, p) => s + p.score, 0) +
+        selectedFwds.reduce((s, p) => s + p.score, 0);
 
-    if (neededDefs > 0) {
-      const remainingDefs = defs.filter(p => !starterIdSet.has(p.id));
-      for (let i = 0; i < neededDefs && i < remainingDefs.length; i++) {
-        starters.push(remainingDefs[i]);
-        starterIdSet.add(remainingDefs[i].id);
+      if (formationScore > bestScore) {
+        bestScore = formationScore;
+        bestStarters = [
+          bestGkp.id,
+          ...selectedDefs.map(p => p.id),
+          ...selectedMids.map(p => p.id),
+          ...selectedFwds.map(p => p.id)
+        ];
       }
     }
-
-    if (neededMids > 0) {
-      const remainingMids = mids.filter(p => !starterIdSet.has(p.id));
-      for (let i = 0; i < neededMids && i < remainingMids.length; i++) {
-        starters.push(remainingMids[i]);
-        starterIdSet.add(remainingMids[i].id);
-      }
-    }
-
-    if (neededFwds > 0) {
-      const remainingFwds = fwds.filter(p => !starterIdSet.has(p.id));
-      for (let i = 0; i < neededFwds && i < remainingFwds.length; i++) {
-        starters.push(remainingFwds[i]);
-        starterIdSet.add(remainingFwds[i].id);
-      }
-    }
-
-    if (starters.length < 11) {
-      const flexPool = [
-        ...defs.filter(p => !starterIdSet.has(p.id)),
-        ...mids.filter(p => !starterIdSet.has(p.id)),
-        ...fwds.filter(p => !starterIdSet.has(p.id))
-      ].sort((a, b) => b.score - a.score);
-
-      for (const candidate of flexPool) {
-        if (starters.length >= 11) break;
-        const countPos = starters.filter(p => p.pos === candidate.pos).length;
-        const maxPos = candidate.pos === 'DEF' ? 4 : candidate.pos === 'MID' ? 5 : 3;
-        if (countPos < maxPos) {
-          starters.push(candidate);
-          starterIdSet.add(candidate.id);
-        }
-      }
-    }
-
-    return starters.map(p => p.id);
   }
 
-  return squadIds.slice(0, 11);
+  if (bestStarters.length === 11) {
+    return bestStarters;
+  }
+
+  // Fallback guaranteeing exactly 11 players
+  return [bestGkp.id, ...defs.slice(0, 4).map(p => p.id), ...mids.slice(0, 4).map(p => p.id), ...fwds.slice(0, 2).map(p => p.id)].slice(0, 11);
 }
 
 export function solveCaptain(
